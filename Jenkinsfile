@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('GIT') {
             steps {
-                git branch: 'saharayedi',
+                git branch: 'sahar-ayedi',
                     url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
             }
         }
@@ -26,7 +26,7 @@ pipeline {
         }
         stage('Scan') {
             steps {
-                withSonarQubeEnv('sqq1') {
+                withSonarQubeEnv('sq1111') {
                     // Add sonar.java.binaries property to point to compiled classes
                     sh 'mvn sonar:sonar'
                 }
