@@ -18,13 +18,14 @@ pipeline {
             }
         }
 
-       stage('Scan') {
+        stage('Scan') {
             steps {
                 withSonarQubeEnv('sq1111') {
+                    // Run SonarQube analysis
                     sh 'mvn sonar:sonar -Dsonar.java.binaries=target/classes'
                 }
             }
-
+        }
 
         stage('Deploy to Nexus') {
             steps {
