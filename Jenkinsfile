@@ -18,12 +18,13 @@ pipeline {
             }
         }
 
-        stage('SonarQube') {
+       stage('Scan') {
             steps {
-                // Run SonarQube analysis using Maven
-                sh 'mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=Lbm*Zgq@r73WS,.'
+                withSonarQubeEnv('sq1111') {
+                    sh 'mvn sonar:sonar -Dsonar.java.binaries=target/classes'
+                }
             }
-        }
+
 
         stage('Deploy to Nexus') {
             steps {
