@@ -14,25 +14,24 @@ pipeline {
             }
         }
         
-        stage('Compile Stage') {   // Move the compile stage before the scan
+        stage('Compile Stage') {
             steps {
                 sh 'mvn clean compile'
             }
         }
-         stage('Deploy to Nexus') {  // Add the deployment stage
+
+        stage('Scan') {
+            steps {
+                withSonarQubeEnv('sq1111') {
+                    sh 'mvn sonar:sonar -Dsonar.java.binaries=target/classes'
+                }
+            }
+        }
+        
+        stage('Deploy to Nexus') {
             steps {
                 sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.56.10:8081/repository/maven-releases/'
             }
         }
-        stage('Scan') {
-            steps {
-                withSonarQubeEnv('sq1111') {
-                    // Add sonar.java.binaries property to point to compiled classes
-                    sh 'mvn sonar:sonar'
-                }
-            }
-        }
-
-        
     }
 }
