@@ -26,7 +26,7 @@ pipeline {
         }
         stage('Scan') {
             steps {
-                withSonarQubeEnv('sq2') {
+                withSonarQubeEnv('sqaziz') {
                     // Add sonar.java.binaries property to point to compiled classes
                     sh 'mvn sonar:sonar'
                 }
