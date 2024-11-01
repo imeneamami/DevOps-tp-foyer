@@ -2,7 +2,7 @@ FROM openjdk:17-jdk-alpine
 EXPOSE 8089
 
 # Copy the JAR file into the image
-COPY tn/esprit/tp-foyer/5.0.0/tp-foyer-5.0.0.jar /app/tp-foyer-5.0.0.jar
+COPY tp-foyer-5.0.0.jar /app/tp-foyer-5.0.0.jar
 
 # Set the working directory (optional but recommended)
 WORKDIR /app
