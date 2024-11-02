@@ -21,6 +21,20 @@ pipeline {
                 sh 'mvn clean compile'
             }
         }
+       
+       // stage('Scan') {
+           // steps {
+               // withSonarQubeEnv('sq1') {
+                   // sh 'mvn sonar:sonar'
+              //  }
+            //}
+        //}
+
+       // stage('Deploy to Nexus') {  // Add the deployment stage
+         //   steps {
+         //       sh 'mvn deploy'
+          //  }
+       // }
 
         stage('Build Docker Image') {
             steps {
@@ -51,12 +65,38 @@ pipeline {
             }
         }
 
-        // Uncomment this stage if you want to deploy with Docker Compose
         stage('Deploy with Docker Compose') {
             steps {
                 script {
                     // Start the Docker Compose file
                     sh 'docker-compose up -d'
+                }
+            }
+        }
+
+        stage('Deploy Application with Docker Compose') {
+            steps {
+                script {
+                    // Start the application service
+                    sh 'docker-compose up -d app-timesheet mysqldb'
+                }
+            }
+        }
+
+        stage('Deploy Prometheus') {
+            steps {
+                script {
+                    // Start Prometheus
+                    sh 'docker-compose up -d prometheus'
+                }
+            }
+        }
+
+        stage('Deploy Grafana') {
+            steps {
+                script {
+                    // Start Grafana
+                    sh 'docker-compose up -d grafana'
                 }
             }
         }
