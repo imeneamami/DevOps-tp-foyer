@@ -1,6 +1,6 @@
 pipeline {
     agent any
-
+    
     tools {
         jdk 'JAVA_HOME'
         maven 'M2_HOME'
@@ -9,63 +9,55 @@ pipeline {
     stages {
         stage('GIT') {
             steps {
+                // Checkout the specified branch from the Git repository
                 git branch: 'ImenAmami',
                     url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
             }
         }
         
-        stage('Compile Stage') {
+        stage('Maven Compile') {
             steps {
+                // Clean and compile the Maven project
                 sh 'mvn clean compile'
             }
         }
 
-        // Uncomment this stage if you have SonarQube configured
-        //stage('Scan') {
-         //  steps {
-          //    withSonarQubeEnv('sq1') {
-           //       sh 'mvn sonar:sonar'
-           //  }
-          //}
-        //}
-
-         // Uncomment this stage if you want to deploy to Nexus
-         //stage('Deploy to Nexus') {
-          //   steps {
-          //       sh 'mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.50.2:8081/repository/maven-releases/'
-          //  }
-         //}
-        
-         stage('Building Image') {
+        stage('Build Docker Image') {
             steps {
-               script {
-                    // Commande pour construire l'image Docker
-                   sh 'docker build -t imen1amami/tp-foyer:5.0.0 .'
+                script {
+                    // Build the Docker image
+                    sh 'docker build -t imen1amami/tp-foyer:5.0.0 .'
                 }
             }
-       }
+        }
 
-        //stage('Push Docker Image to DockerHub') {
-          //  steps {
-           //     script {
-                    // Connexion à DockerHub
-           //         sh '''
-          //          docker login -u imen1amami -p pwd
-           //         docker push imen1amami/tp-foyer:5.0.0
-           //         '''
-            //    }
-           // }
-        //}
+        stage('Check Permissions') {
+            steps {
+                script {
+                    // Check permissions of the script
+                    sh 'ls -l push_docker_image.sh'
+                }
+            }
+        }
 
-       // stage('Deploy with Docker Compose') {
-          //  steps {
-           //     script {
-                    // Lancer le fichier docker-compose
-            //        sh 'docker-compose up -d'
-            //    }
-           // }
-       // }
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    // Set executable permission and run the shell script
+                    sh 'chmod +x push_docker_image.sh'
+                    sh './push_docker_image.sh'
+                }
+            }
+        }
 
-        
+        // Uncomment this stage if you want to deploy with Docker Compose
+         stage('Deploy with Docker Compose') {
+             steps {
+                script {
+        //             // Start the Docker Compose file
+                    sh 'docker-compose up -d'
+                }
+            }
+        }
     }
 }
