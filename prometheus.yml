@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s 
+
+scrape_configs:
+  - job_name: 'app-timesheet'  # Your application's metrics
+    static_configs:
+      - targets: ['app-timesheet:8089']  
+
+  - job_name: 'mysql'  # MySQL metrics
+    static_configs:
+      - targets: ['mysql-exporter:9104']  
