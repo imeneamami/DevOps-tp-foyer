@@ -42,19 +42,20 @@ pipeline {
 
         stage('Push Docker Image to Docker Hub') {
             steps {
-                script {
-                    // Set executable permission and run the shell script
-                    sh 'chmod +x push_docker_image.sh'
-                    sh './push_docker_image.sh'
+                withCredentials([usernamePassword(credentialsId: 'dockerHubCredentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        docker push imen1amami/tp-foyer:5.0.0
+                    '''
                 }
             }
         }
 
         // Uncomment this stage if you want to deploy with Docker Compose
-         stage('Deploy with Docker Compose') {
-             steps {
+        stage('Deploy with Docker Compose') {
+            steps {
                 script {
-        //             // Start the Docker Compose file
+                    // Start the Docker Compose file
                     sh 'docker-compose up -d'
                 }
             }
