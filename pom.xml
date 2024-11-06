@@ -65,6 +65,28 @@
                     </excludes>
                 </configuration>
             </plugin>
+
+            <!-- OWASP Dependency-Check Plugin -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>6.5.0</version> <!-- You can use the latest version -->
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal> <!-- Goal to run the security scan -->
+                        </goals>
+                        <phase>verify</phase> <!-- Runs during the verify phase of the build lifecycle -->
+                        <configuration>
+                            <!-- Optional configuration to fail the build on vulnerabilities -->
+                            <failBuildOnCVSS>7</failBuildOnCVSS> <!-- Fail the build if the CVSS score is 7 or higher -->
+                            <format>HTML</format> <!-- Report format (HTML, XML, JSON) -->
+                            <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory> <!-- Report output directory -->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 
@@ -77,4 +99,5 @@
     </distributionManagement>
 
 </project>
+
 
