@@ -12,7 +12,7 @@ services:
     volumes:
       - db:/var/lib/mysql
 
-  app-station-ski:
+  tp-foyer:
     depends_on:
       - mysqldb
     image: torkhaniroua/tp-foyer:5.0.0
