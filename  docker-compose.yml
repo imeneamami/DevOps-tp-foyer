@@ -1,36 +1,40 @@
-version: "3.8"
-
 services:
   mysqldb:
-    image: mysql:8.0.30
+    image: mysql:8.0
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=
-      - MYSQL_DATABASE=db
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=stationskidb
     ports:
       - 3306:3306
     volumes:
       - db:/var/lib/mysql
+    networks:
+      - custom_network
 
   tp-foyer:
     depends_on:
       - mysqldb
-    image: torkhaniroua/tp-foyer:5.0.0
-    # Uncomment if you need to build locally instead of using the image
-    # build: ./
+    image: torkhaniroua/tp-foyer:1.0.0
     restart: on-failure
     ports:
       - 8089:8089
     environment:
       SPRING_APPLICATION_JSON: '{
-        "spring.datasource.url"  : "jdbc:mysql://mysqldb:3306/db?createDatabaseIfNotExist=true",
-        "spring.datasource.username" : "root",
-        "spring.datasource.password" : "",
+        "spring.datasource.url" : "jdbc:mysql://mysqldb:3306/stationskidb?createDatabaseIfNotExist=true",
+        "spring.datasource.username": "root",
+        "spring.datasource.password": "",
         "spring.jpa.properties.hibernate.dialect" : "org.hibernate.dialect.MySQL5InnoDBDialect",
         "spring.jpa.hibernate.ddl-auto" : "update"
       }'
     stdin_open: true
     tty: true
+    networks:
+      - custom_network
 
 volumes:
   db:
+
+networks:
+  custom_network:
+    driver: bridge
