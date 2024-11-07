@@ -1,62 +1,34 @@
 version: "3.8"
-
-services:
+services :
   mysqldb:
-    image: mysql:8
-    restart: unless-stopped
+    image: mysql:latest
+    restart : unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=
+      - MYSQL_ALLOW_EMPTY_PASSWORD="yes"
       - MYSQL_DATABASE=db
     ports:
-      - "3306:3306"
+      - 3306:3306
     volumes:
       - db:/var/lib/mysql
-
-  app-timesheet:
+  app-achats:
     depends_on:
       - mysqldb
     image: torkhaniroua/tp-foyer:5.0.0
     restart: on-failure
     ports:
-      - "8089:8089"
+      - 8082:8082
     environment:
-      SPRING_APPLICATION_JSON: '{
-        "spring.datasource.url": "jdbc:mysql://localhost:3306/db?createDatabaseIfNotExist=true",
-        "spring.datasource.username": "root",
-        "spring.datasource.password": null,
-        "spring.jpa.hibernate.ddl-auto": "update",
-        "spring.jpa.properties.hibernate.dialect": "org.hibernate.dialect.MySQL8Dialect"
+      SPRING_APPLICATION_JSON : '{
+      "spring.datasource.url" : "jdbc:mysql://mysqldb:3306/db?createDatabaseIfNotExist=true",
+      "spring.datasource.username":"root",
+      "spring.datasource.password": "root",
+      "spring.jpa.properties.hibernate.dialect" : "org.hibernate.dialect.MySQL5InnoDBDialect",
+      "spring.jpa.hibernate.ddl-auto" : "update"
       }'
     stdin_open: true
-    tty: true
-
-  mysql-exporter:
-    image: prom/mysqld-exporter
-    restart: unless-stopped
-    environment:
-      - DATA_SOURCE_NAME=root:@mysqldb:3306/db  # MySQL connection string
-    ports:
-      - "9104:9104"  # Exporter port
-
-  prometheus:
-    image: prom/prometheus
-    restart: unless-stopped
-    volumes:
-      - prometheus_data:/prometheus
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml  # Path to the Prometheus config file
-    ports:
-      - "9090:9090"  # Prometheus UI port
-
-  grafana:
-    image: grafana/grafana
-    restart: unless-stopped
-    ports:
-      - "3000:3000"  # Grafana UI port
-    depends_on:
-      - prometheus
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin  # Set Grafana admin password
-
+    tty : true
 volumes:
   db:
-  prometheus_data:
+networks:
+  custom_network:
+    driver: bridge
