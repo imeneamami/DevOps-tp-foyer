@@ -123,9 +123,13 @@ pipeline {
         }
     }
 
-    post {
-        always {
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
-        }
+   post {
+    always {
+        // Archive the OWASP Dependency-Check report
+        archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
+        
+        // Archive the Talisman report for review
+        archiveArtifacts allowEmptyArchive: true, artifacts: 'talisman_report/talisman_reports/data/*'
     }
 }
+
