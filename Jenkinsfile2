@@ -15,7 +15,7 @@ pipeline {
                     chmod +x talisman
                 '''
                 // Run Talisman scan locally from the workspace
-                sh 'talisman --scan'
+                sh './talisman --scan'
             }
         }
 
