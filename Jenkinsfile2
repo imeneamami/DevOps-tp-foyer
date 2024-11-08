@@ -6,21 +6,19 @@ pipeline {
     }
 
     stages {
-        
         stage('Pre-commit: Talisman') {
-    steps {
-        echo 'Downloading and running Talisman to scan for sensitive content...'
-        // Download the Talisman binary to the current workspace
-        sh '''
-            curl -L -o talisman https://github.com/thoughtworks/talisman/releases/latest/download/talisman_linux_amd64
-            chmod +x talisman
-        '''
-        // Run Talisman scan locally from the workspace
-        sh './talisman --scan'
-    }
-}
+            steps {
+                echo 'Downloading and running Talisman to scan for sensitive content...'
+                // Download the Talisman binary to the current workspace
+                sh '''
+                    curl -L -o talisman https://github.com/thoughtworks/talisman/releases/latest/download/talisman_linux_amd64
+                    chmod +x talisman
+                '''
+                // Run Talisman scan locally from the workspace
+                sh './talisman --scan'
+            }
+        }
 
-        
         stage('Checkout Git') {
             steps {
                 git credentialsId: 'cred-github', 
@@ -34,13 +32,13 @@ pipeline {
                 sh 'mvn clean package'
             }
         }
-        
+
         stage('Run Unit Tests and JaCoCo') {
             steps {
                 sh 'mvn test jacoco:report'
             }
         }
-        
+
         stage('SonarQube') {
             steps {
                 sh 'mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=Azizballegi@1234 -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
@@ -123,13 +121,15 @@ pipeline {
         }
     }
 
-   post {
-    always {
-        // Archive the OWASP Dependency-Check report
-        archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
-        
-        // Archive the Talisman report for review
-        archiveArtifacts allowEmptyArchive: true, artifacts: 'talisman_report/talisman_reports/data/*'
+    post {
+        always {
+            // Archive the OWASP Dependency-Check report
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
+            
+            // Archive the Talisman report for review
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'talisman_report/talisman_reports/data/*'
+        }
     }
 }
+
 
