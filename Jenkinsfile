@@ -32,12 +32,10 @@ pipeline {
             }
         }
 
-        
-
         stage('Build image') {
             steps {
                 // Build Docker image
-                sh 'docker build -f Dockerfile -t sahar212/tp-foyer:1.0.0 .'
+                sh 'sudo docker build -f Dockerfile -t sahar212/tp-foyer:1.0.0 .'
             }
         }
 
@@ -45,8 +43,8 @@ pipeline {
             steps {
                 // Deploy Docker image
                 sh '''
-                    docker login -u sahar212 -p Lbm*Zgq@r73WS,.
-                    docker push sahar212/tp-foyer:1.0.0
+                    sudo docker login -u sahar212 -p Lbm*Zgq@r73WS,.
+                    sudo docker push sahar212/tp-foyer:1.0.0
                 '''
             }
         }
@@ -54,7 +52,7 @@ pipeline {
         stage('Docker Compose') {
             steps {
                 // Start services using Docker Compose
-                sh 'docker compose up -d'
+                sh 'sudo docker compose up -d'
             }
         }
     }
