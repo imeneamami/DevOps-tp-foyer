@@ -2,65 +2,72 @@ pipeline {
     agent any
 
     environment {
-        // Set the email address for notifications
-        RECIPIENT = 'fedi.ballegi20@gmail.com' // Replace with your email address
+        RECIPIENT = 'fedi.ballegi20@gmail.com'
     }
 
     stages {
+        
+        stage('Pre-commit: Talisman') {
+            steps {
+                echo 'Running Talisman to scan for sensitive content...'
+                // Run Talisman in scan mode to check for sensitive information in committed files
+                sh 'talisman --scan'
+            }
+        }
+        
         stage('Checkout Git') {
             steps {
-                // Checkout the code from the repository
                 git credentialsId: 'cred-github', 
-                    branch: 'aziz-ballegi', // Branch name
-                    url: 'https://github.com/imeneamami/DevOps-tp-foyer.git' // Repository URL
+                    branch: 'aziz-ballegi',
+                    url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
             }
         }
 
         stage('Compiling') {
             steps {
-                // Compile the project using Maven
                 sh 'mvn clean package'
             }
         }
         
         stage('Run Unit Tests and JaCoCo') {
             steps {
-                // Run unit tests and generate the JaCoCo report
                 sh 'mvn test jacoco:report'
             }
         }
         
         stage('SonarQube') {
             steps {
-                // Run SonarQube analysis using Maven
-                sh 'mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=Azizballegi@1234 -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml -Dsonar.jacoco.reportPaths=target/jacoco.exec -Dsonar.junit.reportPaths=target/test-classes'
+                sh 'mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=Azizballegi@1234 -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
             }
         }
 
         stage('Nexus Deploy') {
             steps {
-                // Deploy the artifact to Nexus, skipping tests
                 sh 'mvn deploy -DskipTests'
             }
         }
 
-        stage('OWASP Dependency-Check') {
+        stage('Commit: OWASP Dependency-Check') {
             steps {
-                // Run OWASP Dependency-Check during the build
                 sh 'mvn org.owasp:dependency-check-maven:check'
             }
         }
 
-        stage('Build image') {
+        stage('Acceptance Phase: Ansible') {
             steps {
-                // Build Docker image
+                echo 'Setting up the acceptance environment using Ansible...'
+                sh 'ansible-playbook -i inventory/acceptance setup.yml'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
                 sh 'docker build -f Dockerfile -t azizballegi/tp-foyer:1.0.0 .'
             }
         }
 
-        stage('Deploy image') {
+        stage('Push Docker Image') {
             steps {
-                // Deploy Docker image
                 sh '''
                     docker login -u azizballegi -p Aziz@1234
                     docker push azizballegi/tp-foyer:1.0.0
@@ -68,9 +75,22 @@ pipeline {
             }
         }
 
-        stage('Docker Compose') {
+        stage('Production Phase: OWASP ZAP') {
             steps {
-                // Start services using Docker Compose
+                echo 'Running OWASP ZAP security scan in production...'
+                sh 'zap-cli quick-scan --self-contained http://production-url.com'
+            }
+        }
+
+        stage('Operation Phase: Start Grafana Monitoring') {
+            steps {
+                echo 'Starting Grafana monitoring...'
+                sh 'docker start grafana'
+            }
+        }
+
+        stage('Deploy with Docker Compose') {
+            steps {
                 sh 'docker compose up -d'
             }
         }
@@ -83,15 +103,14 @@ pipeline {
                     def body = """
                         The build has ${buildStatus.toLowerCase()}.
                         
-                        You can find the OWASP Dependency-Check report
+                        You can find the OWASP Dependency-Check report attached.
                     """
-                    // Send the email
                     emailext(
                         to: "${RECIPIENT}",
                         subject: subject,
                         body: body,
-                        attachLog: true, // Attach the build log if needed
-                        attachmentsPattern: 'target/dependency-check-report.html' // Attach the report file
+                        attachLog: true,
+                        attachmentsPattern: 'target/dependency-check-report.html'
                     )
                 }
             }
@@ -100,7 +119,6 @@ pipeline {
 
     post {
         always {
-            // Optional: Archive the Dependency-Check report if not already archived
             archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
         }
     }
