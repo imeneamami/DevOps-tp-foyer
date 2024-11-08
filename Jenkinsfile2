@@ -1,0 +1,107 @@
+pipeline {
+    agent any
+
+    environment {
+        // Set the email address for notifications
+        RECIPIENT = 'fedi.ballegi20@gmail.com' // Replace with your email address
+    }
+
+    stages {
+        stage('Checkout Git') {
+            steps {
+                // Checkout the code from the repository
+                git credentialsId: 'cred-github', 
+                    branch: 'aziz-ballegi', // Branch name
+                    url: 'https://github.com/imeneamami/DevOps-tp-foyer.git' // Repository URL
+            }
+        }
+
+        stage('Compiling') {
+            steps {
+                // Compile the project using Maven
+                sh 'mvn clean package'
+            }
+        }
+        
+        stage('Run Unit Tests and JaCoCo') {
+            steps {
+                // Run unit tests and generate the JaCoCo report
+                sh 'mvn test jacoco:report'
+            }
+        }
+        
+        stage('SonarQube') {
+            steps {
+                // Run SonarQube analysis using Maven
+                sh 'mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=Azizballegi@1234 -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml -Dsonar.jacoco.reportPaths=target/jacoco.exec -Dsonar.junit.reportPaths=target/test-classes'
+            }
+        }
+
+        stage('Nexus Deploy') {
+            steps {
+                // Deploy the artifact to Nexus, skipping tests
+                sh 'mvn deploy -DskipTests'
+            }
+        }
+
+        stage('OWASP Dependency-Check') {
+            steps {
+                // Run OWASP Dependency-Check during the build
+                sh 'mvn org.owasp:dependency-check-maven:check'
+            }
+        }
+
+        stage('Build image') {
+            steps {
+                // Build Docker image
+                sh 'docker build -f Dockerfile -t azizballegi/tp-foyer:1.0.0 .'
+            }
+        }
+
+        stage('Deploy image') {
+            steps {
+                // Deploy Docker image
+                sh '''
+                    docker login -u azizballegi -p Aziz@1234
+                    docker push azizballegi/tp-foyer:1.0.0
+                '''
+            }
+        }
+
+        stage('Docker Compose') {
+            steps {
+                // Start services using Docker Compose
+                sh 'docker compose up -d'
+            }
+        }
+
+        stage('Send Email Notification') {
+            steps {
+                script {
+                    def buildStatus = currentBuild.result ?: 'SUCCESS'
+                    def subject = "Build ${buildStatus}: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+                    def body = """
+                        The build has ${buildStatus.toLowerCase()}.
+                        
+                        You can find the OWASP Dependency-Check report
+                    """
+                    // Send the email
+                    emailext(
+                        to: "${RECIPIENT}",
+                        subject: subject,
+                        body: body,
+                        attachLog: true, // Attach the build log if needed
+                        attachmentsPattern: 'target/dependency-check-report.html' // Attach the report file
+                    )
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Optional: Archive the Dependency-Check report if not already archived
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
+        }
+    }
+}
