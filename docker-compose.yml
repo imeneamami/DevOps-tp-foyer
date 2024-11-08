@@ -55,23 +55,6 @@ services:
     depends_on:
       - prometheus
 
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter
-    ports:
-      - "9100:9100"
-
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor
-    ports:
-      - "8085:8080"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-
 volumes:
   db:
   prometheus:
