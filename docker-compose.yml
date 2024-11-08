@@ -5,8 +5,8 @@ services:
     image: mysql:8
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=  
-      - MYSQL_DATABASE=db
+      MYSQL_ROOT_PASSWORD: root_password  # Replace with a secure password
+      MYSQL_DATABASE: db
     ports:
       - "3306:3306"
     volumes:
@@ -20,41 +20,59 @@ services:
     ports:
       - "8089:8089"
     environment:
-      SPRING_APPLICATION_JSON: '{
-        "spring.datasource.url": "jdbc:mysql://mysqldb:3306/db?createDatabaseIfNotExist=true",
-        "spring.datasource.username": "root",
-        "spring.datasource.password": "root_password",
-        "spring.jpa.hibernate.ddl-auto": "update",
-        "spring.jpa.properties.hibernate.dialect": "org.hibernate.dialect.MySQL8Dialect"
-      }'
+      SPRING_APPLICATION_JSON: >-
+        {
+          "spring.datasource.url": "jdbc:mysql://mysqldb:3306/db?createDatabaseIfNotExist=true",
+          "spring.datasource.username": "root",
+          "spring.datasource.password": "root_password",
+          "spring.jpa.hibernate.ddl-auto": "update",
+          "spring.jpa.properties.hibernate.dialect": "org.hibernate.dialect.MySQL8Dialect"
+        }
     stdin_open: true
     tty: true
 
   prometheus:
-    image: prom/prometheus
-    restart: unless-stopped
-    volumes:
-      - prometheus_data:/prometheus
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    image: prom/prometheus:latest
+    container_name: prometheus
     ports:
-      - "9090:9090"  # Prometheus UI port
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
 
   grafana:
-    image: grafana/grafana
-    restart: unless-stopped
+    image: grafana/grafana:latest
+    container_name: grafana
     ports:
-      - "3000:3000"  # Grafana UI port
+      - "3000:3000"
+    volumes:
+      - grafana:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
     depends_on:
       - prometheus
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin  # Set Grafana admin password
 
   node-exporter:
-    image: prom/node-exporter
-    restart: unless-stopped
+    image: prom/node-exporter:latest
+    container_name: node-exporter
     ports:
-      - "9100:9100"  # Node Exporter port
+      - "9100:9100"
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
 
 volumes:
-  db:  # Volume for MySQL database
-  prometheus_data:  # Volume for Prometheus data
+  db:
+  prometheus:
+  grafana:
