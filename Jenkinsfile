@@ -32,35 +32,6 @@ pipeline {
             }
         }
     }
-    stage('OWASP Dependency-Check') {
-            steps {
-                // Run OWASP Dependency-Check during the build
-                sh 'mvn org.owasp:dependency-check-maven:check'
-            }
-        }
-
-        stage('Build image') {
-            steps {
-                // Build Docker image
-                sh 'docker build -f Dockerfile -t sahar212/tp-foyer:1.0.0 .'
-            }
-        }
-
-        stage('Deploy image') {
-            steps {
-                // Deploy Docker image
-                sh '''
-                    docker login -u sahar212 -p Lbm*Zgq@r73WS,.
-                    docker push sahar212/tp-foyer:1.0.0
-                '''
-            }
-        }
-
-        stage('Docker Compose') {
-            steps {
-                // Start services using Docker Compose
-                sh 'docker compose up -d'
-            }
-        }
+   
 
 }
