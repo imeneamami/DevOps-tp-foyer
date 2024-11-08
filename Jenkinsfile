@@ -35,7 +35,7 @@ pipeline {
         stage('Build image') {
             steps {
                 // Build Docker image
-                sh 'sudo docker build -f Dockerfile -t sahar-ayedi/tp-foyer:1.0.0 .'
+                sh 'sudo docker build -f Dockerfile -t sahar212/tp-foyer:1.0.0 .'
             }
         }
 
@@ -44,7 +44,7 @@ pipeline {
                 // Deploy Docker image
                 sh '''
                     sudo docker login -u sahar212 -p Lbm*Zgq@r73WS,.
-                    sudo docker push sahar-ayedi/tp-foyer:1.0.0
+                    sudo docker push sahar212/tp-foyer:1.0.0
                 '''
             }
         }
