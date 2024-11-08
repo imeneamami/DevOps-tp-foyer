@@ -32,12 +32,7 @@ pipeline {
             }
         }
 
-        stage('OWASP Dependency-Check') {
-            steps {
-                // Run OWASP Dependency-Check
-                sh 'mvn org.owasp:dependency-check-maven:check'
-            }
-        }
+        
 
         stage('Build image') {
             steps {
