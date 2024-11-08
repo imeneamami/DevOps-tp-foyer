@@ -9,20 +9,17 @@ pipeline {
     stages {
         stage('GIT') {
             steps {
-                // Checkout the specified branch from the Git repository
                 git branch: 'ImenAmami',
                     url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
             }
         }
-        
+
         stage('Maven Compile') {
             steps {
-                // Clean and compile the Maven project
                 sh 'mvn clean compile'
             }
         }
-       
-       // stage('Scan') {
+        // stage('Scan') {
            // steps {
                // withSonarQubeEnv('sq1') {
                    // sh 'mvn sonar:sonar'
@@ -39,7 +36,6 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build the Docker image
                     sh 'docker build -t imen1amami/tp-foyer:5.0.0 .'
                 }
             }
@@ -48,7 +44,6 @@ pipeline {
         stage('Check Permissions') {
             steps {
                 script {
-                    // Check permissions of the script
                     sh 'ls -l push_docker_image.sh'
                 }
             }
@@ -68,22 +63,13 @@ pipeline {
         stage('Deploy with Docker Compose') {
             steps {
                 script {
-                    // Start the Docker Compose file
                     sh 'docker-compose up -d'
                 }
             }
         }
 
-        stage('Deploy Application with Docker Compose') {
-            steps {
-                script {
-                    // Start the application service
-                    sh 'docker-compose up -d app-timesheet mysqldb'
-                }
-            }
-        }
-
-        stage('Deploy Prometheus') {
+       
+       stage('Deploy Prometheus') {
             steps {
                 script {
                     // Start Prometheus
