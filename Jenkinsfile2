@@ -8,12 +8,18 @@ pipeline {
     stages {
         
         stage('Pre-commit: Talisman') {
-            steps {
-                echo 'Running Talisman to scan for sensitive content...'
-                // Run Talisman in scan mode to check for sensitive information in committed files
-                sh 'talisman --scan'
-            }
-        }
+    steps {
+        echo 'Downloading and running Talisman to scan for sensitive content...'
+        // Download the Talisman binary to the current workspace
+        sh '''
+            curl -L -o talisman https://github.com/thoughtworks/talisman/releases/latest/download/talisman_linux_amd64
+            chmod +x talisman
+        '''
+        // Run Talisman scan locally from the workspace
+        sh './talisman --scan'
+    }
+}
+
         
         stage('Checkout Git') {
             steps {
