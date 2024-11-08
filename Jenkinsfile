@@ -88,33 +88,5 @@ pipeline {
             }
         }
 
-        stage('Send Email Notification') {
-            steps {
-                script {
-                    def buildStatus = currentBuild.result ?: 'SUCCESS'
-                    def subject = "Build ${buildStatus}: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-                    def body = """
-                        The build has ${buildStatus.toLowerCase()}.
-                        
-                        You can find the OWASP Dependency-Check report at: ${env.BUILD_URL}artifact/target/dependency-check-report.html
-                    """
-                    // Send the email
-                    emailext(
-                        to: 'amamiimen566@gmail.com',
-                        subject: subject,
-                        body: body,
-                        attachLog: true,
-                        attachmentsPattern: 'target/dependency-check-report.html'
-                    )
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            // Archive the Dependency-Check report if it exists
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
-        }
-    }
+        
 }
