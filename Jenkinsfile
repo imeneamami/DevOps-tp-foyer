@@ -35,7 +35,7 @@ pipeline {
         stage('Build image') {
             steps {
                 // Build Docker image
-                sh 'sudo docker build -f Dockerfile -t sahar212/tp-foyer:1.0.0 .'
+                sh 'sudo docker build -f Dockerfile -t sahar-ayedi/tp-foyer:1.0.0 .'
             }
         }
 
