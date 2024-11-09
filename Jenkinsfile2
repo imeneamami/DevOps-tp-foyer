@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         RECIPIENT = 'fedi.ballegi20@gmail.com'
+        ZAP_IMAGE = 'owasp/zap2docker-stable'  // OWASP ZAP Docker image
+        TARGET_URL = 'http://192.168.33.10:8080'  // URL to scan
     }
 
     stages {
@@ -61,10 +63,15 @@ pipeline {
             }
         }
 
-        stage('Acceptance Phase: Ansible') {
+        stage('Acceptance Phase: OWASP ZAP') {
             steps {
-                echo 'Setting up the acceptance environment using Ansible...'
-                sh 'ansible-playbook -i inventory/acceptance setup.yml'
+                script {
+                    // Run OWASP ZAP scan using the Docker image
+                    sh """
+                        docker pull $ZAP_IMAGE
+                        docker run -u zap -v $(pwd):/zap/wrk/:rw -t $ZAP_IMAGE zap-baseline.py -t $TARGET_URL -g gen.conf -r zap_report.html
+                    """
+                }
             }
         }
 
