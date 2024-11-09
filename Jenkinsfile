@@ -79,15 +79,6 @@ pipeline {
             }
         }
 
-        stage('Deploy Grafana') {
-            steps {
-                script {
-                    // Start Grafana
-                    sh 'docker-compose up -d grafana'
-                }
-            }
-        }
-
         stage('Send Email Notification') {
             steps {
                 script {
