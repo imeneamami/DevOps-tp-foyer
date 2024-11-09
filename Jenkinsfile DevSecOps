@@ -14,16 +14,17 @@ pipeline {
             }
         }
 
-        stage('Pre-commit: Evil User Stories') {
+        // Pre-Commit: Threat Modeling
+        stage('Pre-Commit: Threat Modeling') {
             steps {
                 echo 'Defining Evil User Stories to identify potential security threats...'
                 script {
+                    // Threat modeling to identify potential attack scenarios
                     def evilUserStories = [
                         "As an attacker, I want to inject SQL queries to gain unauthorized access to the database.",
                         "As an attacker, I want to cross-site script to steal user session data.",
                         "As an attacker, I want to exploit weak passwords to gain access to user accounts."
                     ]
-
                     for (story in evilUserStories) {
                         echo story
                     }
