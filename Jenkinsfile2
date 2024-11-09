@@ -14,7 +14,7 @@ pipeline {
                     curl -L -o threat-spec https://github.com/ThreatSpec/threatspec/releases/latest/download/threatspec_linux_amd64
                     chmod +x threat-spec
                 '''
-                // Run Threat Spec scan locally from the workspace
+                // Ensure proper shell and execution
                 sh './threat-spec --scan'
             }
         }
