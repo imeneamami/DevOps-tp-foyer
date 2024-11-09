@@ -43,20 +43,19 @@ pipeline {
         // Commit (CI) Stage for SAST Analysis
         stage('Commit: SAST Analysis') {
             steps {
-                echo 'Starting SAST analysis with SonarQube...'
-                
+                echo 'Starting SAST analysis...'
+
                 // Run SonarQube analysis
                 withSonarQubeEnv('sq1') {  // 'sq1' is the SonarQube server credentials ID
                     echo 'Running SonarQube analysis...'
                     sh 'mvn sonar:sonar'
                 }
-
                 echo 'SonarQube analysis completed. Check SonarQube for detailed report.'
 
-                echo 'Running GoSec analysis...'
-                sh 'gosec -fmt=json -out=gosec-report.json ./...'  // Run GoSec and generate JSON report
-
-                echo 'GoSec analysis completed. Check the report for findings.'
+                // Run Bundler-audit analysis for Ruby
+                echo 'Running Bundler-audit analysis for Ruby...'
+                sh 'bundle audit check'  // This will check for vulnerabilities in your Gemfile.lock
+                echo 'Bundler-audit analysis completed. Check the output for findings.'
             }
         }
 
