@@ -97,6 +97,16 @@ pipeline {
             }
         }
 
+        // Stage to scan the container image with Trivy
+        stage('Trivy Scan') {
+            steps {
+                script {
+                    echo 'Scanning Docker image for vulnerabilities using Trivy...'
+                    sh 'trivy image --severity HIGH,CRITICAL imen1amami/tp-foyer:5.0.0 --exit-code 1'
+                }
+            }
+        }
+
         stage('Production: Check Permissions') {
             steps {
                 script {
@@ -112,31 +122,6 @@ pipeline {
                         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
                         docker push imen1amami/tp-foyer:5.0.0
                     '''
-                }
-            }
-        }
-
-        // Operations Stage: ElastAlert Monitoring
-        stage('Operations: ElastAlert Monitoring') {
-            steps {
-                echo 'Running ElastAlert monitoring...'
-                script {
-                    // Optional: Check if ElastAlert service is running
-                    def elastalertStatus = sh(script: "pgrep -f elastalert", returnStdout: true).trim()
-                    if (elastalertStatus == '') {
-                        error "ElastAlert service is not running. Please start ElastAlert before running the pipeline."
-                    }
-
-                    // Wait for ElastAlert to be ready (optional)
-                    sleep(10)  // Adjust as necessary
-
-                    // Trigger ElastAlert to check for alerts
-                    echo 'Triggering ElastAlert checks...'
-                    sh '''
-                        elastalert --config /etc/elastalert/config.yaml --run
-                    '''
-
-                    echo 'ElastAlert checks initiated. Check the ElastAlert logs for results.'
                 }
             }
         }
