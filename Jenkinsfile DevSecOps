@@ -7,14 +7,6 @@ pipeline {
     }
 
     stages {
-        // Stage to clone the repository
-        stage('GIT') {
-            steps {
-                git branch: 'ImenAmami',
-                    url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
-            }
-        }
-
         // Pre-Commit Stage for Threat Modeling and Code Analysis
         stage('Pre-Commit: Threat Modeling and Code Analysis') {
             steps {
@@ -33,10 +25,27 @@ pipeline {
             }
         }
 
-        // Stage to compile Maven project
-        stage('Compile Maven') {
+        // Stage to clone the repository
+        stage('GIT') {
             steps {
+                git branch: 'ImenAmami',
+                    url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
+            }
+        }
+
+        // Stage to compile Maven project
+        stage('Maven Compile') {
+            steps {
+                // Compile the project using Maven
                 sh 'mvn clean compile'
+            }
+        }
+
+        // Stage for OWASP Dependency Check
+        stage('OWASP SCAN') {
+            steps {
+                dependencyCheck additionalArguments: '', odcInstallation: 'DP-check'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
 
@@ -49,6 +58,7 @@ pipeline {
                     sh 'mvn sonar:sonar'
                 }
                 echo 'SonarQube analysis completed. Check SonarQube for detailed report.'
+                
                 echo 'Running Bundler-audit analysis for Ruby...'
                 sh 'bundle audit check'  // Check for vulnerabilities in your Gemfile.lock
                 echo 'Bundler-audit analysis completed. Check the output for findings.'
