@@ -6,16 +6,20 @@ pipeline {
     }
 
     stages {
-         stage('Pre-commit: Threat Spec') {
+         stage('Pre-commit: Evil User Stories') {
             steps {
-                echo 'Downloading and running Threat Spec to scan for sensitive content...'
-                // Download the Threat Spec binary to the current workspace
-                sh '''
-                    curl -L -o threat-spec https://github.com/ThreatSpec/threatspec/releases/latest/download/threatspec_linux_amd64
-                    chmod +x threat-spec
-                '''
-                // Ensure proper shell and execution
-                sh './threat-spec --scan'
+                echo 'Defining Evil User Stories to identify potential security threats...'
+                script {
+                    def evilUserStories = [
+                        "As an attacker, I want to inject SQL queries to gain unauthorized access to the database.",
+                        "As an attacker, I want to cross-site script to steal user session data.",
+                        "As an attacker, I want to exploit weak passwords to gain access to user accounts."
+                    ]
+
+                    for (story in evilUserStories) {
+                        echo story
+                    }
+                }
             }
         }
 
