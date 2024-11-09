@@ -60,16 +60,16 @@ pipeline {
         }
 
         // Acceptance Stage
-      stage('Acceptance: Security Scanning') {
+    stage('Acceptance: Security Scanning') {
     steps {
         script {
             // Nmap: Test for unexpected open ports
             echo "Running Nmap to scan for open ports..."
             sh '''
-                sudo nmap -sS -p 1-65535 -T4 localhost -oN nmap_report.txt
+                nmap -sT -p 1-65535 -T4 localhost -oN nmap_report.txt
             '''
             echo "Nmap scan completed. Report saved to nmap_report.txt."
-
+ 
                     // SQLMap: Test for SQL injection attacks
                     echo "Testing for SQL Injection vulnerabilities using SQLMap..."
                     sh '''
