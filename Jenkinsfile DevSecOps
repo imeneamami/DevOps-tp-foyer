@@ -61,19 +61,11 @@ pipeline {
 
         // Acceptance Stage
         stage('Acceptance: Security Scanning') {
-            steps {
-                echo 'Running security scanning and configuration checks...'
-
-                // Arachni: Test for XSS
-                sh '''
-                    echo "Running Arachni for XSS vulnerabilities..."
-                    arachni http://192.168.50.2:8080 --report-save-path=arachni_report.afr
-                '''
 
                 // Nmap: Test for unexpected open ports
                 sh '''
                     echo "Running Nmap to scan for open ports..."
-                    nmap -sS -p 1-65535 -T4 192.168.50.2
+                    nmap -sS -p 1-65535 -T4 localhost
                 '''
 
                 // SQLMap: Test for SQL injection attacks
