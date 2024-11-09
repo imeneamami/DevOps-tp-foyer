@@ -14,26 +14,43 @@ pipeline {
             }
         }
 
+        stage('Pre-commit: Evil User Stories') {
+            steps {
+                echo 'Defining Evil User Stories to identify potential security threats...'
+                script {
+                    def evilUserStories = [
+                        "As an attacker, I want to inject SQL queries to gain unauthorized access to the database.",
+                        "As an attacker, I want to cross-site script to steal user session data.",
+                        "As an attacker, I want to exploit weak passwords to gain access to user accounts."
+                    ]
+
+                    for (story in evilUserStories) {
+                        echo story
+                    }
+                }
+            }
+        }
+
         stage('Maven Compile') {
             steps {
                 sh 'mvn clean compile'
             }
         }
 
-        // Uncomment these stages if you need them
-         stage('Scan') {
+        stage('Static Code Analysis - SonarQube') {
             steps {
-               withSonarQubeEnv('sq1') {
-                   sh 'mvn sonar:sonar'
-               }
-           }
+                withSonarQubeEnv('sq1') {
+                    sh 'mvn sonar:sonar'
+                }
+            }
         }
 
-        //stage('Deploy to Nexus') {
-         //    steps {
-         //       sh 'mvn deploy'
-          //  }
-        // }
+        stage('Dependency Check') {
+            steps {
+                echo 'Running OWASP Dependency-Check to identify vulnerabilities in dependencies...'
+                sh 'mvn org.owasp:dependency-check-maven:check'
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -62,22 +79,17 @@ pipeline {
             }
         }
 
-        //stage('Deploy with Docker Compose') {
-        //    steps {
-            //    script {
-                 //   sh 'docker-compose up -d'
-           //     }
-            //}
-        //}
-
-       // stage('Deploy Prometheus') {
-       //     steps {
-         //       script {
-                    // Start Prometheus
-            //        sh 'docker-compose up -d prometheus'
-             //   }
-            //}
-       // }
+        stage('Dynamic Security Testing') {
+            steps {
+                echo 'Running dynamic security tests...'
+                // Example command for running dynamic security tests, replace with actual command
+                sh '''
+                    curl -L -o zap-cli https://raw.githubusercontent.com/zaproxy/zap-cli/master/zap-cli
+                    chmod +x zap-cli
+                    ./zap-cli quick-scan --self-contained http://localhost:8080
+                '''
+            }
+        }
 
         stage('Send Email Notification') {
             steps {
