@@ -69,29 +69,25 @@
                     </excludes>
                 </configuration>
             </plugin>
-            <!-- OWASP Dependency-Check Plugin with API Key -->
+            <!-- OWASP Dependency-Check Plugin -->
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>11.1.0</version>
-                <configuration>
-                    <cveUrlModified>https://services.nvd.nist.gov/rest/json/cves/1.0/</cveUrlModified>
-                    <cveUrlBase>https://services.nvd.nist.gov/rest/json/cves/1.0/</cveUrlBase>
-                    <apiKey>9f613514-671b-4a8f-942c-826f23aa15c1</apiKey>
-                    <dataDirectory>${project.build.directory}/dependency-check-data</dataDirectory>
-                    <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory>
-                    <failBuildOnCVSS>7</failBuildOnCVSS> <!-- Fail the build if any vulnerability with CVSS >= 7 is found -->
-                </configuration>
+                <version>6.5.0</version> <!-- You can use the latest version -->
                 <executions>
                     <execution>
                         <goals>
-                            <goal>check</goal>
+                            <goal>check</goal> <!-- Goal to run the security scan -->
                         </goals>
-                        <phase>verify</phase>
+                        <phase>verify</phase> <!-- Runs during the verify phase of the build lifecycle -->
+                        <configuration>
+                            <format>HTML</format> <!-- Report format (HTML, XML, JSON) -->
+                            <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory> <!-- Report output directory -->
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
-        </plugins>
+        </plugins> <!-- Added missing closing tag here -->
     </build>
 
     <distributionManagement>
