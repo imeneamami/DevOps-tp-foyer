@@ -108,22 +108,23 @@ pipeline {
             }
         }
 
-        // Operations Stage
-        stage('Operations: Dynamic Security Testing') {
+          // Operations Stage: OpenVAS Vulnerability Scanning
+        stage('Operations: OpenVAS Vulnerability Scanning') {
             steps {
-                echo 'Running dynamic security tests...'
-                sh '''
-                    curl -L -o zap-cli https://raw.githubusercontent.com/zaproxy/zap-cli/master/zap-cli
-                    chmod +x zap-cli
-                    ./zap-cli quick-scan --self-contained http://localhost:8080
-                '''
-            }
-        }
-
-        stage('Operations: Continuous Monitoring and Compliance') {
-            steps {
-                echo 'Monitoring for threats and ensuring compliance...'
-                // Commands for monitoring tools, replace with actual commands as needed
+                echo 'Running OpenVAS vulnerability scans...'
+                script {
+                    // Commands to run OpenVAS, assuming OpenVAS is installed and configured
+                    // Start OpenVAS services if needed
+                    sh 'sudo gvm-start'  // or the appropriate command to start the OpenVAS services
+                    // Wait for OpenVAS to be ready (add a sleep if necessary)
+                    sleep(60)  // Adjust the sleep duration based on your setup
+                    // Create a new target and scan
+                    sh '''
+                        openvas-cli --create-target "localhost" --port 8080
+                        openvas-cli --start-scan "localhost"
+                    '''
+                    echo 'OpenVAS scan initiated. Check the OpenVAS interface for results.'
+                }
             }
         }
 
