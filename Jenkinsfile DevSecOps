@@ -14,12 +14,12 @@ pipeline {
             }
         }
 
-        // Pre-Commit: Threat Modeling
-        stage('Pre-Commit: Threat Modeling') {
+        // Pre-Commit Stage
+        stage('Pre-Commit: Threat Modeling and Code Analysis') {
             steps {
-                echo 'Defining Evil User Stories to identify potential security threats...'
+                echo 'Performing threat modeling and checking for secure coding standards...'
                 script {
-                    // Threat modeling to identify potential attack scenarios
+                    // Define Evil User Stories for threat modeling
                     def evilUserStories = [
                         "As an attacker, I want to inject SQL queries to gain unauthorized access to the database.",
                         "As an attacker, I want to cross-site script to steal user session data.",
@@ -32,13 +32,14 @@ pipeline {
             }
         }
 
-        stage('Maven Compile') {
+        stage('Compile Maven') {
             steps {
                 sh 'mvn clean compile'
             }
         }
 
-        stage('Static Code Analysis - SonarQube') {
+        // Commit (CI) Stage
+        stage('Commit: SAST with SonarQube') {
             steps {
                 withSonarQubeEnv('sq1') {
                     sh 'mvn sonar:sonar'
@@ -46,14 +47,38 @@ pipeline {
             }
         }
 
-        stage('Dependency Check') {
+        stage('Commit: Dependency Management') {
             steps {
-                echo 'Running OWASP Dependency-Check to identify vulnerabilities in dependencies...'
+                echo 'Running OWASP Dependency-Check for vulnerabilities in dependencies...'
                 sh 'mvn org.owasp:dependency-check-maven:check'
             }
         }
 
-        stage('Build Docker Image') {
+       // Acceptance Stage
+      stage('Acceptance: Security Scanning') {
+       steps {
+        echo 'Running security scanning and configuration checks...'
+
+        // Arachni: Test for XSS
+        sh '''
+            echo "Running Arachni for XSS vulnerabilities..."
+            arachni http://192.168.50.2:8080 --report-save-path=arachni_report.afr
+        '''
+
+        // Nmap: Test for unexpected open ports
+        sh '''
+            echo "Running Nmap to scan for open ports..."
+            nmap -sS -p 1-65535 -T4 192.168.50.2
+        '''
+
+        // SQLMap: Test for SQL injection attacks
+        sh '''
+            echo "Testing for SQL Injection vulnerabilities using SQLMap..."
+            sqlmap -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=5 --risk=3 --output-dir=sqlmap_output
+        '''
+
+        // Production Stage
+        stage('Production: Docker Build and Push') {
             steps {
                 script {
                     sh 'docker build -t imen1amami/tp-foyer:5.0.0 .'
@@ -61,7 +86,7 @@ pipeline {
             }
         }
 
-        stage('Check Permissions') {
+        stage('Production: Check Permissions') {
             steps {
                 script {
                     sh 'ls -l push_docker_image.sh'
@@ -69,7 +94,7 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image to Docker Hub') {
+        stage('Production: Push Docker Image to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerHubCredentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     sh '''
@@ -80,10 +105,10 @@ pipeline {
             }
         }
 
-        stage('Dynamic Security Testing') {
+        // Operations Stage
+        stage('Operations: Dynamic Security Testing') {
             steps {
                 echo 'Running dynamic security tests...'
-                // Example command for running dynamic security tests, replace with actual command
                 sh '''
                     curl -L -o zap-cli https://raw.githubusercontent.com/zaproxy/zap-cli/master/zap-cli
                     chmod +x zap-cli
@@ -92,6 +117,14 @@ pipeline {
             }
         }
 
+        stage('Operations: Continuous Monitoring and Compliance') {
+            steps {
+                echo 'Monitoring for threats and ensuring compliance...'
+                // Commands for monitoring tools, replace with actual commands as needed
+            }
+        }
+
+        // Notification
         stage('Send Email Notification') {
             steps {
                 script {
@@ -99,10 +132,9 @@ pipeline {
                     def subject = "Build ${buildStatus}: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
                     def body = """
                         The build has ${buildStatus.toLowerCase()}.
-                        
+
                         You can find the OWASP Dependency-Check report at: ${env.BUILD_URL}artifact/target/dependency-check-report.html
                     """
-                    // Send the email
                     emailext(
                         to: 'amamiimen566@gmail.com',
                         subject: subject,
@@ -117,7 +149,6 @@ pipeline {
 
     post {
         always {
-            // Archive the Dependency-Check report if it exists
             archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
         }
     }

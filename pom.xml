@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -44,7 +45,6 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.1.0</version>
         </dependency>
-        <!-- Spring Boot Actuator and Micrometer dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
@@ -69,25 +69,16 @@
                     </excludes>
                 </configuration>
             </plugin>
-            <!-- OWASP Dependency-Check Plugin -->
             <plugin>
-                <groupId>org.owasp</groupId>
-                <artifactId>dependency-check-maven</artifactId>
-                <version>6.5.0</version> <!-- You can use the latest version -->
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal> <!-- Goal to run the security scan -->
-                        </goals>
-                        <phase>verify</phase> <!-- Runs during the verify phase of the build lifecycle -->
-                        <configuration>
-                            <format>HTML</format> <!-- Report format (HTML, XML, JSON) -->
-                            <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory> <!-- Report output directory -->
-                        </configuration>
-                    </execution>
-                </executions>
+                <groupId>com.h3xstream.findsecbugs</groupId>
+                <artifactId>find-sec-bugs-maven-plugin</artifactId>
+                <version>3.0.5</version> <!-- Use the latest version available -->
+                <configuration>
+                    <outputDirectory>target/findsecbugs</outputDirectory> <!-- Directory for reports -->
+                    <failOnError>true</failOnError> <!-- Fail the build if vulnerabilities are found -->
+                </configuration>
             </plugin>
-        </plugins> <!-- Added missing closing tag here -->
+        </plugins>
     </build>
 
     <distributionManagement>
