@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JAVA_HOME'  // Ensure 'JAVA_HOME' matches the installed JDK tool name in Jenkins
-        maven 'M2_HOME'  // Ensure 'M2_HOME' matches the installed Maven tool name in Jenkins
+        jdk 'JAVA_HOME'  
+        maven 'M2_HOME'
     }
 
     stages {
@@ -96,17 +96,18 @@ pipeline {
         }
 
         // Trivy Scan Stage
-       stage('Trivy Scan') {
+      stage('Trivy Scan') {
     steps {
         script {
             echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
             sh '''
                 export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln imen1amami/tp-foyer:5.0.0 --exit-code 1
+                trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m imen1amami/tp-foyer:5.0.0 --exit-code 1
             '''
         }
     }
 }
+
 
 
         // Production: Check Permissions
