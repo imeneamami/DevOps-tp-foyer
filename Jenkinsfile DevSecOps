@@ -2,11 +2,12 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JAVA_HOME'
-        maven 'M2_HOME'
+        jdk 'JAVA_HOME'  // Specify the JDK installation
+        maven 'M2_HOME'  // Specify the Maven installation
     }
 
     stages {
+        // Stage to clone the repository
         stage('GIT') {
             steps {
                 git branch: 'ImenAmami',
@@ -14,7 +15,7 @@ pipeline {
             }
         }
 
-        // Pre-Commit Stage
+        // Pre-Commit Stage for Threat Modeling and Code Analysis
         stage('Pre-Commit: Threat Modeling and Code Analysis') {
             steps {
                 echo 'Performing threat modeling and checking for secure coding standards...'
@@ -32,50 +33,57 @@ pipeline {
             }
         }
 
+        // Stage to compile Maven project
         stage('Compile Maven') {
             steps {
                 sh 'mvn clean compile'
             }
         }
 
-        // Commit (CI) Stage
-        stage('Commit: SAST with SonarQube') {
+        // Commit (CI) Stage for SAST Analysis
+        stage('Commit: SAST Analysis') {
             steps {
-                withSonarQubeEnv('sq1') {
+                echo 'Starting SAST analysis with SonarQube...'
+                
+                // Run SonarQube analysis
+                withSonarQubeEnv('sq1') {  // 'sq1' is the SonarQube server credentials ID
+                    echo 'Running SonarQube analysis...'
                     sh 'mvn sonar:sonar'
                 }
+
+                echo 'SonarQube analysis completed. Check SonarQube for detailed report.'
+
+                echo 'Running GoSec analysis...'
+                sh 'gosec -fmt=json -out=gosec-report.json ./...'  // Run GoSec and generate JSON report
+
+                echo 'GoSec analysis completed. Check the report for findings.'
             }
         }
 
-        stage('Commit: Dependency Management') {
+        // Acceptance Stage
+        stage('Acceptance: Security Scanning') {
             steps {
-                echo 'Running OWASP Dependency-Check for vulnerabilities in dependencies...'
-                sh 'mvn org.owasp:dependency-check-maven:check'
+                echo 'Running security scanning and configuration checks...'
+
+                // Arachni: Test for XSS
+                sh '''
+                    echo "Running Arachni for XSS vulnerabilities..."
+                    arachni http://192.168.50.2:8080 --report-save-path=arachni_report.afr
+                '''
+
+                // Nmap: Test for unexpected open ports
+                sh '''
+                    echo "Running Nmap to scan for open ports..."
+                    nmap -sS -p 1-65535 -T4 192.168.50.2
+                '''
+
+                // SQLMap: Test for SQL injection attacks
+                sh '''
+                    echo "Testing for SQL Injection vulnerabilities using SQLMap..."
+                    sqlmap -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=5 --risk=3 --output-dir=sqlmap_output
+                '''
             }
         }
-
-       // Acceptance Stage
-      stage('Acceptance: Security Scanning') {
-       steps {
-        echo 'Running security scanning and configuration checks...'
-
-        // Arachni: Test for XSS
-        sh '''
-            echo "Running Arachni for XSS vulnerabilities..."
-            arachni http://192.168.50.2:8080 --report-save-path=arachni_report.afr
-        '''
-
-        // Nmap: Test for unexpected open ports
-        sh '''
-            echo "Running Nmap to scan for open ports..."
-            nmap -sS -p 1-65535 -T4 192.168.50.2
-        '''
-
-        // SQLMap: Test for SQL injection attacks
-        sh '''
-            echo "Testing for SQL Injection vulnerabilities using SQLMap..."
-            sqlmap -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=5 --risk=3 --output-dir=sqlmap_output
-        '''
 
         // Production Stage
         stage('Production: Docker Build and Push') {
