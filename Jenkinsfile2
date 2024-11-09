@@ -6,16 +6,16 @@ pipeline {
     }
 
     stages {
-        stage('Pre-commit: Talisman') {
+         stage('Pre-commit: Threat Spec') {
             steps {
-                echo 'Downloading and running Talisman to scan for sensitive content...'
-                // Download the Talisman binary to the current workspace
+                echo 'Downloading and running Threat Spec to scan for sensitive content...'
+                // Download the Threat Spec binary to the current workspace
                 sh '''
-                    curl -L -o talisman https://github.com/thoughtworks/talisman/releases/latest/download/talisman_linux_amd64
-                    chmod +x talisman
+                    curl -L -o threat-spec https://github.com/ThreatSpec/threatspec/releases/latest/download/threatspec_linux_amd64
+                    chmod +x threat-spec
                 '''
-                // Run Talisman scan locally from the workspace
-                sh './talisman --scan'
+                // Run Threat Spec scan locally from the workspace
+                sh './threat-spec --scan'
             }
         }
 
