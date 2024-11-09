@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JAVA_HOME'  // Specify the JDK installation
-        maven 'M2_HOME'  // Specify the Maven installation
+        jdk 'JAVA_HOME'  // Ensure 'JAVA_HOME' matches the installed JDK tool name in Jenkins
+        maven 'M2_HOME'  // Ensure 'M2_HOME' matches the installed Maven tool name in Jenkins
     }
 
     stages {
@@ -18,7 +18,7 @@ pipeline {
                         "As an attacker, I want to cross-site script to steal user session data.",
                         "As an attacker, I want to exploit weak passwords to gain access to user accounts."
                     ]
-                    for (story in evilUserStories) {
+                    evilUserStories.each { story -> 
                         echo story
                     }
                 }
@@ -71,9 +71,7 @@ pipeline {
                 script {
                     // Nmap: Test for unexpected open ports
                     echo "Running Nmap to scan for open ports..."
-                    sh '''
-                        nmap -sT -p 1-65535 -T4 localhost -oN nmap_report.txt
-                    '''
+                    sh 'nmap -sT -p 1-65535 -T4 localhost -oN nmap_report.txt'
                     echo "Nmap scan completed. Report saved to nmap_report.txt."
 
                     // Uncomment to enable SQLMap testing
@@ -97,26 +95,20 @@ pipeline {
             }
         }
 
+        // Trivy Scan Stage
         stage('Trivy Scan') {
-    steps {
-        script {
-            echo 'Scanning Docker image for vulnerabilities using Trivy...'
-            // Set Trivy cache directory and conditionally skip update
-            sh '''
-                export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                mkdir -p $TRIVY_CACHE_DIR
-
-                if [ -z "$(ls -A $TRIVY_CACHE_DIR)" ]; then
-                    echo "Database not found. Running update."
-                    trivy image --severity HIGH,CRITICAL imen1amami/tp-foyer:5.0.0 --exit-code 1
-                else
-                    echo "Database found. Skipping update."
-                    trivy image --severity HIGH,CRITICAL --skip-db-update imen1amami/tp-foyer:5.0.0 --exit-code 1
-                fi
-            '''
+            steps {
+                script {
+                    echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
+                    sh '''
+                        export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                        trivy image --severity HIGH,CRITICAL --skip-db-update imen1amami/tp-foyer:5.0.0 --exit-code 1
+                    '''
+                }
+            }
         }
-    }
-}
+
+        // Production: Check Permissions
         stage('Production: Check Permissions') {
             steps {
                 script {
@@ -125,6 +117,7 @@ pipeline {
             }
         }
 
+        // Production: Push Docker Image to Docker Hub
         stage('Production: Push Docker Image to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerHubCredentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
