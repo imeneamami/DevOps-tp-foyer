@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         RECIPIENT = 'fedi.ballegi20@gmail.com'
-        ZAP_IMAGE = 'owasp/zap2docker-stable'  // OWASP ZAP Docker image
-        TARGET_URL = 'http://192.168.33.10:8080'  // URL to scan
+        TARGET_HOST = '192.168.33.10'  // Replace with the actual target IP if needed
+        NMAP_SCAN_OPTIONS = '-p 8089'  // Port to scan
     }
 
     stages {
@@ -66,10 +66,9 @@ pipeline {
         stage('Acceptance Phase: OWASP ZAP') {
             steps {
                 script {
-                    // Run OWASP ZAP scan using the Docker image
+                    // Run Nmap scan targeting the containers' ports
                     sh """
-                        docker pull $ZAP_IMAGE
-                        docker run -u zap -v $(pwd):/zap/wrk/:rw -t $ZAP_IMAGE zap-baseline.py -t $TARGET_URL -g gen.conf -r zap_report.html
+                        nmap $NMAP_SCAN_OPTIONS $TARGET_HOST -oN nmap_scan_report.txt
                     """
                 }
             }
@@ -137,8 +136,8 @@ pipeline {
             // Archive the OWASP Dependency-Check report
             archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
             
-            // Archive the Talisman report for review
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'talisman_report/talisman_reports/data/*'
+           // Archive the Nmap scan report
+            archiveArtifacts 'nmap_scan_report.txt'
         }
     }
 }
