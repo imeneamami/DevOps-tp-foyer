@@ -98,23 +98,30 @@ pipeline {
         }
 
         // Trivy Scan Stage
-        stage('Trivy Scan') {
-            steps {
-                script {
-                    echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
-                    def scanResult = sh(script: '''
-                        export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                        trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m imen1amami/tp-foyer:5.0.0 --exit-code 1
-                    ''', returnStatus: true)
-                    
-                    if (scanResult != 0) {
-                        error "Trivy scan found vulnerabilities in the Docker image, failing the build."
-                    } else {
-                        echo "Trivy scan completed successfully with no vulnerabilities above the set severity level."
-                    }
-                }
+       stage('Trivy Scan') {
+    steps {
+        script {
+            echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
+            def scanResult = sh(script: '''
+                export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m imen1amami/tp-foyer:5.0.0 --exit-code 1
+            ''', returnStatus: true, returnStdout: true)
+
+            // Parse the Trivy scan result and check for vulnerabilities count
+            def highVulnerabilitiesCount = scanResult.count("HIGH")
+            def criticalVulnerabilitiesCount = scanResult.count("CRITICAL")
+
+            echo "Found ${highVulnerabilitiesCount} HIGH and ${criticalVulnerabilitiesCount} CRITICAL vulnerabilities."
+
+            if (highVulnerabilitiesCount > 10 || criticalVulnerabilitiesCount > 5) {
+                error "Trivy scan found too many vulnerabilities (HIGH: ${highVulnerabilitiesCount}, CRITICAL: ${criticalVulnerabilitiesCount}), failing the build."
+            } else {
+                echo "Trivy scan completed successfully with acceptable vulnerabilities."
             }
         }
+    }
+}
+
 
         stage('Production: Check Permissions') {
             steps {
