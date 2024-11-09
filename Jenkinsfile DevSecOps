@@ -44,15 +44,11 @@ pipeline {
         stage('Commit: SAST Analysis') {
             steps {
                 echo 'Starting SAST analysis...'
-
-                // Run SonarQube analysis
                 withSonarQubeEnv('sq1') {  // 'sq1' is the SonarQube server credentials ID
                     echo 'Running SonarQube analysis...'
                     sh 'mvn sonar:sonar'
                 }
                 echo 'SonarQube analysis completed. Check SonarQube for detailed report.'
-
-                // Run Bundler-audit analysis for Ruby
                 echo 'Running Bundler-audit analysis for Ruby...'
                 sh 'bundle audit check'  // Check for vulnerabilities in your Gemfile.lock
                 echo 'Bundler-audit analysis completed. Check the output for findings.'
@@ -115,17 +111,21 @@ pipeline {
             steps {
                 echo 'Running OpenVAS vulnerability scans...'
                 script {
-                    // Start OpenVAS services if needed
-                    // Note: Ensure that the user running Jenkins has passwordless sudo for this command
-                    sh 'sudo gvm-start'  // Start OpenVAS
-                    sleep(60)  // Wait for OpenVAS to be ready (adjust as necessary)
+                    // Optional: Check if OpenVAS services are running
+                    def openvasStatus = sh(script: "systemctl is-active openvas-scanner", returnStdout: true).trim()
+                    if (openvasStatus != 'active') {
+                        error "OpenVAS services are not running. Please start the services before running the pipeline."
+                    }
+
+                    // Wait for OpenVAS to be ready (optional)
+                    sleep(30)  // Adjust as necessary
 
                     // Create a new target and scan
                     sh '''
                         openvas-cli --create-target "localhost" --port 8080
                         openvas-cli --start-scan "localhost"
                     '''
-                    echo 'OpenVAS scan initiated. Check the OpenVAS interface for results.'
+                    echo 'OpenVAS scan initiated. Check the OpenVAS interface for results at https://127.0.0.1:9392.'
                 }
             }
         }
