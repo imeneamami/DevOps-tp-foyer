@@ -21,19 +21,19 @@ pipeline {
         }
 
         // Uncomment these stages if you need them
-        // stage('Scan') {
-        //     steps {
-        //         withSonarQubeEnv('sq1') {
-        //             sh 'mvn sonar:sonar'
-        //         }
-        //     }
-        // }
+         stage('Scan') {
+            steps {
+               withSonarQubeEnv('sq1') {
+                   sh 'mvn sonar:sonar'
+               }
+           }
+        }
 
-        // stage('Deploy to Nexus') {
-        //     steps {
-        //         sh 'mvn deploy'
-        //     }
-        // }
+        stage('Deploy to Nexus') {
+             steps {
+                sh 'mvn deploy'
+            }
+         }
 
         stage('Build Docker Image') {
             steps {
@@ -62,22 +62,22 @@ pipeline {
             }
         }
 
-        stage('Deploy with Docker Compose') {
-            steps {
-                script {
-                    sh 'docker-compose up -d'
-                }
-            }
-        }
+        //stage('Deploy with Docker Compose') {
+        //    steps {
+            //    script {
+                 //   sh 'docker-compose up -d'
+           //     }
+            //}
+        //}
 
-        stage('Deploy Prometheus') {
-            steps {
-                script {
+       // stage('Deploy Prometheus') {
+       //     steps {
+         //       script {
                     // Start Prometheus
-                    sh 'docker-compose up -d prometheus'
-                }
-            }
-        }
+            //        sh 'docker-compose up -d prometheus'
+             //   }
+            //}
+       // }
 
         stage('Send Email Notification') {
             steps {
