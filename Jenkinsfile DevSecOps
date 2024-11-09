@@ -102,7 +102,12 @@ pipeline {
             steps {
                 script {
                     echo 'Scanning Docker image for vulnerabilities using Trivy...'
-                    sh 'trivy image --severity HIGH,CRITICAL imen1amami/tp-foyer:5.0.0 --exit-code 1'
+                    // Set Trivy cache directory and skip update if cache exists
+                    sh '''
+                        export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                        mkdir -p $TRIVY_CACHE_DIR
+                        trivy image --severity HIGH,CRITICAL --skip-update imen1amami/tp-foyer:5.0.0 --exit-code 1
+                    '''
                 }
             }
         }
