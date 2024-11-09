@@ -54,7 +54,7 @@ pipeline {
 
                 // Run Bundler-audit analysis for Ruby
                 echo 'Running Bundler-audit analysis for Ruby...'
-                sh 'bundle audit check'  // This will check for vulnerabilities in your Gemfile.lock
+                sh 'bundle audit check'  // Check for vulnerabilities in your Gemfile.lock
                 echo 'Bundler-audit analysis completed. Check the output for findings.'
             }
         }
@@ -69,18 +69,20 @@ pipeline {
                         nmap -sT -p 1-65535 -T4 localhost -oN nmap_report.txt
                     '''
                     echo "Nmap scan completed. Report saved to nmap_report.txt."
- 
-                    // SQLMap: Test for SQL injection vulnerabilities
-                    //echo "Running SQL Injection vulnerabilities test using SQLMap..."
-                    //sh '''
-                    //    python3 /home/vagrant/DevOps-tp-foyer/sqlmap/sqlmap.py -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=5 --risk=3 --output-dir=sqlmap_output
-                   // '''
-                  //  echo "SQLMap scan completed. Check sqlmap_output for results."
-              //  }
-          //  }
-       // }
 
-        // Production Stage
+                    // Uncomment to enable SQLMap testing
+                    /*
+                    echo "Running SQL Injection vulnerabilities test using SQLMap..."
+                    sh '''
+                        python3 /home/vagrant/DevOps-tp-foyer/sqlmap/sqlmap.py -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=5 --risk=3 --output-dir=sqlmap_output
+                    '''
+                    echo "SQLMap scan completed. Check sqlmap_output for results."
+                    */
+                }
+            }
+        }
+
+        // Production Stage: Docker Build and Push
         stage('Production: Docker Build and Push') {
             steps {
                 script {
@@ -108,16 +110,16 @@ pipeline {
             }
         }
 
-          // Operations Stage: OpenVAS Vulnerability Scanning
+        // Operations Stage: OpenVAS Vulnerability Scanning
         stage('Operations: OpenVAS Vulnerability Scanning') {
             steps {
                 echo 'Running OpenVAS vulnerability scans...'
                 script {
-                    // Commands to run OpenVAS, assuming OpenVAS is installed and configured
                     // Start OpenVAS services if needed
-                    sh 'sudo gvm-start'  // or the appropriate command to start the OpenVAS services
-                    // Wait for OpenVAS to be ready (add a sleep if necessary)
-                    sleep(60)  // Adjust the sleep duration based on your setup
+                    // Note: Ensure that the user running Jenkins has passwordless sudo for this command
+                    sh 'sudo gvm-start'  // Start OpenVAS
+                    sleep(60)  // Wait for OpenVAS to be ready (adjust as necessary)
+
                     // Create a new target and scan
                     sh '''
                         openvas-cli --create-target "localhost" --port 8080
