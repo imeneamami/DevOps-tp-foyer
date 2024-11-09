@@ -96,17 +96,18 @@ pipeline {
         }
 
         // Trivy Scan Stage
-        stage('Trivy Scan') {
-            steps {
-                script {
-                    echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
-                    sh '''
-                        export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                        trivy image --severity HIGH,CRITICAL --skip-db-update imen1amami/tp-foyer:5.0.0 --exit-code 1
-                    '''
-                }
-            }
+       stage('Trivy Scan') {
+    steps {
+        script {
+            echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
+            sh '''
+                export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln imen1amami/tp-foyer:5.0.0 --exit-code 1
+            '''
         }
+    }
+}
+
 
         // Production: Check Permissions
         stage('Production: Check Permissions') {
