@@ -1,5 +1,9 @@
 pipeline {
     agent any
+ environment {
+        // Set the email address for notifications
+        RECIPIENT = 'ayedisahar3@gmail.com' // Replace with your email address
+    }
 
     stages {
         stage('Checkout Git') {
@@ -31,6 +35,12 @@ pipeline {
                 sh "mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.1.12:8081/repository/maven-releases/"
             }
         }
+      stage('OWASP Dependency-Check') {
+            steps {
+                // Run OWASP Dependency-Check during the build
+                sh 'mvn org.owasp:dependency-check-maven:check'
+            }
+        }
 
         stage('Build image') {
             steps {
@@ -48,6 +58,7 @@ pipeline {
                 '''
             }
         }
+        
 
         stage('Docker Compose') {
             steps {
@@ -55,5 +66,33 @@ pipeline {
                 sh 'sudo docker compose up -d'
             }
         }
+         stage('Send Email Notification') {
+            steps {
+                script {
+                    def buildStatus = currentBuild.result ?: 'SUCCESS'
+                    def subject = "Build ${buildStatus}: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+                    def body = """
+                        The build has ${buildStatus.toLowerCase()}.
+                        
+                        You can find the OWASP Dependency-Check report
+                    """
+                    // Send the email
+                    emailext(
+                        to: "${RECIPIENT}",
+                        subject: subject,
+                        body: body,
+                        attachLog: true, // Attach the build log if needed
+                        attachmentsPattern: 'target/dependency-check-report.html' // Attach the report file
+                    )
+                }
+            }
+        }
+    }
+ post {
+        always {
+            // Optional: Archive the Dependency-Check report if not already archived
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
+        }
+
     }
 }
