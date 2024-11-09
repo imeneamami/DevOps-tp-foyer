@@ -97,21 +97,26 @@ pipeline {
             }
         }
 
-        // Stage to scan the container image with Trivy
         stage('Trivy Scan') {
-            steps {
-                script {
-                    echo 'Scanning Docker image for vulnerabilities using Trivy...'
-                    // Set Trivy cache directory and skip update if cache exists
-                    sh '''
-                        export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                        mkdir -p $TRIVY_CACHE_DIR
-                        trivy image --severity HIGH,CRITICAL --skip-update imen1amami/tp-foyer:5.0.0 --exit-code 1
-                    '''
-                }
-            }
-        }
+    steps {
+        script {
+            echo 'Scanning Docker image for vulnerabilities using Trivy...'
+            // Set Trivy cache directory and conditionally skip update
+            sh '''
+                export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                mkdir -p $TRIVY_CACHE_DIR
 
+                if [ -z "$(ls -A $TRIVY_CACHE_DIR)" ]; then
+                    echo "Database not found. Running update."
+                    trivy image --severity HIGH,CRITICAL imen1amami/tp-foyer:5.0.0 --exit-code 1
+                else
+                    echo "Database found. Skipping update."
+                    trivy image --severity HIGH,CRITICAL --skip-db-update imen1amami/tp-foyer:5.0.0 --exit-code 1
+                fi
+            '''
+        }
+    }
+}
         stage('Production: Check Permissions') {
             steps {
                 script {
