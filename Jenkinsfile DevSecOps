@@ -100,13 +100,20 @@ pipeline {
     steps {
         script {
             echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
-            sh '''
+            def scanResult = sh(script: '''
                 export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
                 trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m imen1amami/tp-foyer:5.0.0 --exit-code 1
-            '''
+            ''', returnStatus: true)
+            
+            if (scanResult != 0) {
+                error "Trivy scan found vulnerabilities in the Docker image, failing the build."
+            } else {
+                echo "Trivy scan completed successfully with no vulnerabilities above the set severity level."
+            }
         }
     }
 }
+
 
 
 
