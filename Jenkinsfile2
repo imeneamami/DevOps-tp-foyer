@@ -63,7 +63,7 @@ pipeline {
             }
         }
 
-        stage('Acceptance Phase: OWASP ZAP') {
+        stage('Acceptance Phase: nmap') {
             steps {
                 script {
                     // Run Nmap scan targeting the containers' ports
