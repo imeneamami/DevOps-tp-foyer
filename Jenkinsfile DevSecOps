@@ -3,7 +3,7 @@ pipeline {
 
     tools {
         jdk 'JAVA_HOME'  
-        maven 'M2_HOME'
+        maven 'M2_HOME'  
     }
 
     stages {
@@ -18,7 +18,7 @@ pipeline {
                         "As an attacker, I want to cross-site script to steal user session data.",
                         "As an attacker, I want to exploit weak passwords to gain access to user accounts."
                     ]
-                    evilUserStories.each { story -> 
+                    for (story in evilUserStories) {
                         echo story
                     }
                 }
@@ -53,7 +53,7 @@ pipeline {
         stage('Commit: SAST Analysis') {
             steps {
                 echo 'Starting SAST analysis...'
-                withSonarQubeEnv('sq1') {  // 'sq1' is the SonarQube server credentials ID
+                withSonarQubeEnv('sq1') { 
                     echo 'Running SonarQube analysis...'
                     sh 'mvn sonar:sonar'
                 }
@@ -71,7 +71,9 @@ pipeline {
                 script {
                     // Nmap: Test for unexpected open ports
                     echo "Running Nmap to scan for open ports..."
-                    sh 'nmap -sT -p 1-65535 -T4 localhost -oN nmap_report.txt'
+                    sh '''
+                        nmap -sT -p 1-65535 -T4 localhost -oN nmap_report.txt
+                    '''
                     echo "Nmap scan completed. Report saved to nmap_report.txt."
 
                     // Uncomment to enable SQLMap testing
@@ -96,28 +98,24 @@ pipeline {
         }
 
         // Trivy Scan Stage
-      stage('Trivy Scan') {
-    steps {
-        script {
-            echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
-            def scanResult = sh(script: '''
-                export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m imen1amami/tp-foyer:5.0.0 --exit-code 1
-            ''', returnStatus: true)
-            
-            if (scanResult != 0) {
-                error "Trivy scan found vulnerabilities in the Docker image, failing the build."
-            } else {
-                echo "Trivy scan completed successfully with no vulnerabilities above the set severity level."
+        stage('Trivy Scan') {
+            steps {
+                script {
+                    echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
+                    def scanResult = sh(script: '''
+                        export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                        trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m imen1amami/tp-foyer:5.0.0 --exit-code 1
+                    ''', returnStatus: true)
+                    
+                    if (scanResult != 0) {
+                        error "Trivy scan found vulnerabilities in the Docker image, failing the build."
+                    } else {
+                        echo "Trivy scan completed successfully with no vulnerabilities above the set severity level."
+                    }
+                }
             }
         }
-    }
-}
 
-
-
-
-        // Production: Check Permissions
         stage('Production: Check Permissions') {
             steps {
                 script {
@@ -126,7 +124,6 @@ pipeline {
             }
         }
 
-        // Production: Push Docker Image to Docker Hub
         stage('Production: Push Docker Image to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerHubCredentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
