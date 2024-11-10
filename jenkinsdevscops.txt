@@ -40,7 +40,7 @@ pipeline {
         // Stage to clone the repository
         stage('GIT') {
             steps {
-                git branch: 'ImenAmami',
+                git branch: 'torkhaniroua',
                     url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
             }
         }
