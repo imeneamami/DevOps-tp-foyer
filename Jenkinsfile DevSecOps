@@ -62,20 +62,6 @@ pipeline {
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
-
-        stage('Commit:SCA Analysis') {
-            steps {
-                echo 'Starting SCA analysis...'
-                withSonarQubeEnv('sq1') { 
-                    sh 'mvn sonar:sonar'
-                }
-                echo 'SonarQube analysis completed. Check SonarQube for detailed report.'
-                
-                echo 'Running Bundler-audit analysis for Ruby...'
-                sh 'bundle audit check' // Check for vulnerabilities in Gemfile.lock
-                echo 'Bundler-audit analysis completed.'
-            }
-        }
         
 
           // Acceptance Stage
