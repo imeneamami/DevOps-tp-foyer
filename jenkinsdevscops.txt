@@ -8,16 +8,8 @@ pipeline {
 
     stages {
 
-        // Dependency Check Stage
-        stage('Dependency Check') {
-            steps {
-                script {
-                    dependencyCheck additionalArguments: '--scan /path/to/scan'
-                }
-            }
-        }
-
         // Pre-Commit Stage for Threat Modeling and Secure Practices
+
         stage('Pre-Commit: Threat Modeling and Secure Practices') {
             steps {
                 script {
@@ -48,7 +40,7 @@ pipeline {
         // Stage to clone the repository
         stage('GIT') {
             steps {
-                git branch: 'torkhaniroua',
+                git branch: 'ImenAmami',
                     url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
             }
         }
@@ -60,30 +52,20 @@ pipeline {
             }
         }
 
-        // Commit (CI) - OWASP Dependency Check
+        
+        // Commit (CI)
+
+        // Stage for OWASP Dependency Check
         stage('Commit: OWASP SCAN') {
             steps {
                 dependencyCheck additionalArguments: '', odcInstallation: 'DP-check'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
+        
 
-        // Commit: SCA Analysis using SonarQube and Bundler-audit
-        stage('Commit:SCA Analysis') {
-            steps {
-                echo 'Starting SCA analysis...'
-                withSonarQubeEnv('sq1') { 
-                    sh 'mvn sonar:sonar'
-                }
-                echo 'SonarQube analysis completed. Check SonarQube for detailed report.'
+          // Acceptance Stage
 
-                echo 'Running Bundler-audit analysis for Ruby...'
-                sh 'bundle audit check' // Check for vulnerabilities in Gemfile.lock
-                echo 'Bundler-audit analysis completed.'
-            }
-        }
-
-        // Acceptance Stage for Security Scanning Tools
         stage('Acceptance: Security Scanning Tools') {
             steps {
                 script {
@@ -95,16 +77,18 @@ pipeline {
                     echo "Nmap scan completed. Report saved to nmap_report.txt."
 
                     // SQL Injection: Test for SQL injection Attacks
+                    
                     echo "Running SQL Injection vulnerabilities test using SQLMap..."
                     sh '''
-                        python3 /home/vagrant/DevOps-tp-foyer/sqlmap/sqlmap.py -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=1 --risk=1 --tamper=space2comment --output-dir=sqlmap_output
+                        python3  /home/vagrant/DevOps-tp-foyer/sqlmap/sqlmap.py -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=1 --risk=1 --tamper=space2comment --output-dir=sqlmap_output
                     '''
                     echo "SQLMap scan completed. Check sqlmap_output for results."
+                    
                 }
             }
         }
 
-        // Production Stage - Docker Build and Push
+        //Docker Build and Push
         stage('Production: Docker Build and Push') {
             steps {
                 script {
@@ -113,7 +97,7 @@ pipeline {
             }
         }
 
-        // Production Stage: Trivy Scan
+        //  Production Stage:  Trivy Scan Stage
         stage('Trivy Scan') {
             steps {
                 script {
@@ -132,182 +116,7 @@ pipeline {
             }
         }
 
-        // Push Docker Image to Docker Hub
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerHubCredentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh '''
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                        docker push imen1amami/tp-foyer:5.0.0
-                    '''
-                }
-            }
-        }
 
-        // Notification Stage
-        stage('Send Email Notification') {
-            steps {
-                script {
-                    def buildStatus = currentBuild.result ?: 'SUCCESS'
-                    def subject = "Build ${buildStatus}: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-                    def body = """
-                        The build has ${buildStatus.toLowerCase()}.
-
-                        You can find the OWASP Dependency-Check report at: ${env.BUILD_URL}artifact/target/dependency-check-report.html
-                    """
-                    emailext(
-                        to: 'amamiimen566@gmail.com',
-                        subject: subject,
-                        body: body,
-                        attachLog: true,
-                        attachmentsPattern: 'target/dependency-check-report.html'
-                    )
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
-        }
-    }
-}
-pipeline {
-    agent any
-
-    tools {
-        jdk 'JAVA_HOME'  
-        maven 'M2_HOME'  
-    }
-
-    stages {
-
-        // Dependency Check Stage
-        stage('Dependency Check') {
-            steps {
-                script {
-                    dependencyCheck additionalArguments: '--scan /path/to/scan'
-                }
-            }
-        }
-
-        // Pre-Commit Stage for Threat Modeling and Secure Practices
-        stage('Pre-Commit: Threat Modeling and Secure Practices') {
-            steps {
-                script {
-                    // Define Attacker Personas for threat modeling
-                    def attackerPersonas = [
-                        "Malicious insider with admin access attempting data exfiltration.",
-                        "External hacker targeting user authentication mechanisms.",
-                        "Script kiddie trying to exploit known vulnerabilities in the system."
-                    ]
-                    echo "Attacker Personas:"
-                    for (persona in attackerPersonas) {
-                        echo persona
-                    }
-
-                    // Evil User Stories
-                    echo "\nEvil User Stories:"
-                    def evilUserStories = [
-                        "As an attacker, I want to inject SQL queries to gain unauthorized access to the database.",
-                        "As an attacker, I want to exploit weak passwords to access user accounts."
-                    ]
-                    for (story in evilUserStories) {
-                        echo story
-                    }
-                }
-            }
-        }
-
-        // Stage to clone the repository
-        stage('GIT') {
-            steps {
-                git branch: 'torkhaniroua',
-                    url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
-            }
-        }
-
-        // Stage to compile Maven project
-        stage('Maven Compile') {
-            steps {
-                sh 'mvn clean compile'
-            }
-        }
-
-        // Commit (CI) - OWASP Dependency Check
-        stage('Commit: OWASP SCAN') {
-            steps {
-                dependencyCheck additionalArguments: '', odcInstallation: 'DP-check'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
-
-        // Commit: SCA Analysis using SonarQube and Bundler-audit
-        stage('Commit:SCA Analysis') {
-            steps {
-                echo 'Starting SCA analysis...'
-                withSonarQubeEnv('sq1') { 
-                    sh 'mvn sonar:sonar'
-                }
-                echo 'SonarQube analysis completed. Check SonarQube for detailed report.'
-
-                echo 'Running Bundler-audit analysis for Ruby...'
-                sh 'bundle audit check' // Check for vulnerabilities in Gemfile.lock
-                echo 'Bundler-audit analysis completed.'
-            }
-        }
-
-        // Acceptance Stage for Security Scanning Tools
-        stage('Acceptance: Security Scanning Tools') {
-            steps {
-                script {
-                    // Nmap: Test for unexpected open ports
-                    echo "Running Nmap to scan for open ports..."
-                    sh '''
-                        nmap -sT -p 1-65535 -T4 192.168.50.2 -oN nmap_report.txt
-                    '''
-                    echo "Nmap scan completed. Report saved to nmap_report.txt."
-
-                    // SQL Injection: Test for SQL injection Attacks
-                    echo "Running SQL Injection vulnerabilities test using SQLMap..."
-                    sh '''
-                        python3 /home/vagrant/DevOps-tp-foyer/sqlmap/sqlmap.py -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=1 --risk=1 --tamper=space2comment --output-dir=sqlmap_output
-                    '''
-                    echo "SQLMap scan completed. Check sqlmap_output for results."
-                }
-            }
-        }
-
-        // Production Stage - Docker Build and Push
-        stage('Production: Docker Build and Push') {
-            steps {
-                script {
-                    sh 'docker build -t imen1amami/tp-foyer:5.0.0 .'
-                }
-            }
-        }
-
-        // Production Stage: Trivy Scan
-        stage('Trivy Scan') {
-            steps {
-                script {
-                    echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
-                    def scanResult = sh(script: '''
-                        export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                        trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m imen1amami/tp-foyer:5.0.0 --exit-code 1
-                    ''', returnStatus: true)
-                    
-                    if (scanResult != 0) {
-                        echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
-                    } else {
-                        echo "Trivy scan completed successfully with no critical vulnerabilities."
-                    }
-                }
-            }
-        }
-
-        // Push Docker Image to Docker Hub
         stage('Push Docker Image to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerHubCredentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
