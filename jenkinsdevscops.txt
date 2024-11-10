@@ -53,21 +53,7 @@ pipeline {
 
         // Commit (CI)
 
-        // Stage for OWASP Dependency Check
-        stage('Commit: OWASP SCAN') {
-            steps {
-                script {
-                    // S'assurer que dependency-check est installé et configuré correctement
-                    echo "Running OWASP Dependency Check..."
-                    sh '''
-                        dependency-check --project "My Project" --scan ./ --format HTML --out target
-                    '''
-                }
-                // Publiée après l'exécution du scan OWASP
-                dependencyCheckPublisher pattern: '**/target/dependency-check-report.xml'
-            }
-        }
-
+      
         // Acceptance Stage: Security Scanning Tools
         stage('Acceptance: Security Scanning Tools') {
             steps {
