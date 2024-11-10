@@ -2,14 +2,13 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JAVA_HOME'  
-        maven 'M2_HOME'  
+        jdk 'JAVA_HOME'  // Assurez-vous que 'JAVA_HOME' est bien défini dans les outils Jenkins
+        maven 'M2_HOME'  // Assurez-vous que 'M2_HOME' est bien défini dans les outils Jenkins
     }
 
     stages {
 
         // Pre-Commit Stage for Threat Modeling and Secure Practices
-
         stage('Pre-Commit: Threat Modeling and Secure Practices') {
             steps {
                 script {
@@ -52,20 +51,24 @@ pipeline {
             }
         }
 
-        
         // Commit (CI)
 
         // Stage for OWASP Dependency Check
         stage('Commit: OWASP SCAN') {
             steps {
-                dependencyCheck additionalArguments: ''
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                script {
+                    // S'assurer que dependency-check est installé et configuré correctement
+                    echo "Running OWASP Dependency Check..."
+                    sh '''
+                        dependency-check --project "My Project" --scan ./ --format HTML --out target
+                    '''
+                }
+                // Publiée après l'exécution du scan OWASP
+                dependencyCheckPublisher pattern: '**/target/dependency-check-report.xml'
             }
         }
-        
 
-          // Acceptance Stage
-
+        // Acceptance Stage: Security Scanning Tools
         stage('Acceptance: Security Scanning Tools') {
             steps {
                 script {
@@ -77,27 +80,25 @@ pipeline {
                     echo "Nmap scan completed. Report saved to nmap_report.txt."
 
                     // SQL Injection: Test for SQL injection Attacks
-                    
                     echo "Running SQL Injection vulnerabilities test using SQLMap..."
                     sh '''
-                        python3  /home/vagrant/DevOps-tp-foyer/sqlmap/sqlmap.py -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=1 --risk=1 --tamper=space2comment --output-dir=sqlmap_output
+                        python3 /home/vagrant/DevOps-tp-foyer/sqlmap/sqlmap.py -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=1 --risk=1 --tamper=space2comment --output-dir=sqlmap_output
                     '''
                     echo "SQLMap scan completed. Check sqlmap_output for results."
-                    
                 }
             }
         }
 
-        //Docker Build and Push
+        // Docker Build and Push
         stage('Production: Docker Build and Push') {
             steps {
                 script {
-                    sh 'docker build -t imen1amami/tp-foyer:5.0.0 .'
+                    sh 'docker build -t torkhaniroua/tp-foyer:5.0.0 .'
                 }
             }
         }
 
-        //  Production Stage:  Trivy Scan Stage
+        // Production Stage: Trivy Scan Stage
         stage('Trivy Scan') {
             steps {
                 script {
@@ -116,13 +117,13 @@ pipeline {
             }
         }
 
-
+        // Push Docker Image to Docker Hub
         stage('Push Docker Image to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerHubCredentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     sh '''
                         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                        docker push imen1amami/tp-foyer:5.0.0
+                        docker push torkhaniroua/tp-foyer:5.0.0
                     '''
                 }
             }
@@ -140,7 +141,7 @@ pipeline {
                         You can find the OWASP Dependency-Check report at: ${env.BUILD_URL}artifact/target/dependency-check-report.html
                     """
                     emailext(
-                        to: 'amamiimen566@gmail.com',
+                        to: 'torkhan.roua@esprit.tn',
                         subject: subject,
                         body: body,
                         attachLog: true,
