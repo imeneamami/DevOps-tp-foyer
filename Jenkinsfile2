@@ -168,6 +168,7 @@ pipeline {
             minimum: '0', // Minimum coverage
             maximum: '100' // Maximum coverage
         )
+}
     }
 }
 
