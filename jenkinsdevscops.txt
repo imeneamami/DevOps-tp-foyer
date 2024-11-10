@@ -48,6 +48,22 @@ pipeline {
                 sh 'mvn clean compile'
             }
         }
+  // Stage for OWASP Dependency Check
+        stage('Commit: OWASP SCAN') {
+            steps {
+                dependencyCheck additionalArguments: '', odcInstallation: 'DP-check'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
+        
+        
+         stage('SonarQube') {
+            steps {
+               withSonarQubeEnv('sq1') {
+                  sh 'mvn sonar:sonar'
+               }
+           }
+         }
 
         // Acceptance Stage: Security Scanning Tools
         stage('Acceptance: Security Scanning Tools') {
