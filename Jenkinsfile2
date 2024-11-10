@@ -110,23 +110,6 @@ pipeline {
             }
         }
 
-        stage('OpenVAS Scan') {
-    steps {
-        script {
-            echo "Running OpenVAS scan..."
-            sh '''
-                # Ensure OpenVAS is started and ready
-                gvm-start
-                # Run the OpenVAS scan, replace TARGET_HOST with the target IP or domain
-                openvas-cli --target $TARGET_HOST --scan --output openvas_report.xml
-            '''
-            echo "OpenVAS scan completed. Report saved to openvas_report.xml."
-        }
-    }
-}
-
-
-
         stage('Send Email Notification') {
             steps {
                 script {
@@ -156,9 +139,6 @@ pipeline {
             
            // Archive the Nmap scan report
             archiveArtifacts 'nmap_scan_report.txt'
-
-           // Archive the OpenVAS scan report
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'openvas_report.xml'
 }
     }
 }
