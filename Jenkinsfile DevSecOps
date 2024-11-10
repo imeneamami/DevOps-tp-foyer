@@ -7,7 +7,9 @@ pipeline {
     }
 
     stages {
+
         // Pre-Commit Stage for Threat Modeling and Secure Practices
+
         stage('Pre-Commit: Threat Modeling and Secure Practices') {
             steps {
                 script {
@@ -50,16 +52,18 @@ pipeline {
             }
         }
 
+        
+        // Commit (CI)
+
         // Stage for OWASP Dependency Check
-        stage('OWASP SCAN') {
+        stage('Commit: OWASP SCAN') {
             steps {
                 dependencyCheck additionalArguments: '', odcInstallation: 'DP-check'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
 
-        // Commit (CI) Stage for SAST Analysis
-        stage('Commit: SAST Analysis') {
+        stage('Commit:SAST Analysis') {
             steps {
                 echo 'Starting SAST analysis...'
                 withSonarQubeEnv('sq1') { 
@@ -72,31 +76,33 @@ pipeline {
                 echo 'Bundler-audit analysis completed.'
             }
         }
+        
 
           // Acceptance Stage
-        stage('Acceptance: Security Scanning') {
+
+        stage('Acceptance: Security Scanning Tools') {
             steps {
                 script {
                     // Nmap: Test for unexpected open ports
                     echo "Running Nmap to scan for open ports..."
                     sh '''
-                        nmap -sT -p 1-65535 -T4 localhost -oN nmap_report.txt
+                        nmap -sT -p 1-65535 -T4192.168.50.2-oN nmap_report.txt
                     '''
                     echo "Nmap scan completed. Report saved to nmap_report.txt."
 
-                    // Uncomment to enable SQLMap testing
-                    /*
+                    // SQL Injection: Test for SQL injection Attacks
+                    
                     echo "Running SQL Injection vulnerabilities test using SQLMap..."
                     sh '''
                         python3 /home/vagrant/DevOps-tp-foyer/sqlmap/sqlmap.py -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=5 --risk=3 --output-dir=sqlmap_output
                     '''
                     echo "SQLMap scan completed. Check sqlmap_output for results."
-                    */
+                    
                 }
             }
         }
 
-        // Production Stage: Docker Build and Push
+        //Docker Build and Push
         stage('Production: Docker Build and Push') {
             steps {
                 script {
@@ -105,7 +111,7 @@ pipeline {
             }
         }
 
-        // Trivy Scan Stage
+        //  Production Stage:  Trivy Scan Stage
         stage('Trivy Scan') {
             steps {
                 script {
@@ -124,15 +130,8 @@ pipeline {
             }
         }
 
-        stage('Production: Check Permissions') {
-            steps {
-                script {
-                    sh 'ls -l push_docker_image.sh'
-                }
-            }
-        }
 
-        stage('Production: Push Docker Image to Docker Hub') {
+        stage('Push Docker Image to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerHubCredentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     sh '''
