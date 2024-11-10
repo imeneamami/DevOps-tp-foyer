@@ -104,14 +104,10 @@ pipeline {
             }
         }
 
-        // Push Docker Image to Docker Hub
-        stage('Push Docker Image to Docker Hub') {
+    stage('Deploy with Docker Compose') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerHubCredentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh '''
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                        docker push torkhaniroua/tp-foyer:5.0.0
-                    '''
+                script {
+                    sh 'docker-compose up -d'
                 }
             }
         }
