@@ -86,7 +86,7 @@ pipeline {
                     // Nmap: Test for unexpected open ports
                     echo "Running Nmap to scan for open ports..."
                     sh '''
-                        nmap -sT -p 1-65535 -T4 192.168.50.2-oN nmap_report.txt
+                        nmap -sT -p 1-65535 -T4 192.168.50.2 -oN nmap_report.txt
                     '''
                     echo "Nmap scan completed. Report saved to nmap_report.txt."
 
