@@ -7,7 +7,7 @@ pipeline {
     }
 
     stages {
-         stage('Pre-commit: Evil User Stories') {
+        stage('Pre-commit: Evil User Stories') {
             steps {
                 echo 'Defining Evil User Stories to identify potential security threats...'
                 script {
@@ -65,7 +65,6 @@ pipeline {
         stage('Acceptance Phase: nmap') {
             steps {
                 script {
-                   // Nmap: Test for unexpected open ports
                     echo "Running Nmap to scan for open ports..."
                     sh '''
                         nmap -sT -p 1-65535 -T4 $TARGET_HOST -oN nmap_report.txt
@@ -75,32 +74,33 @@ pipeline {
             }
         }
 
-       // Production Stage: Docker Build and Push
-      stage('Production: Build Docker Image') {
+        // Production Stage: Docker Build and Push
+        stage('Production: Build Docker Image') {
             steps {
                 sh 'docker build -f Dockerfile -t azizballegi/tp-foyer:1.0.0 .'
             }
         }
 
-stage('Production: Trivy Scan') {
-    steps {
-        script {
-            echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
-            // Run Trivy scan and save output to a file
-            def scanResult = sh(script: '''
-                export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m azizballegi/tp-foyer:5.0.0 \
-                --exit-code 1 --format html --output trivy_scan_report.html
-            ''', returnStatus: true)
-            
-            // Check scan result status
-            if (scanResult != 0) {
-                echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
-            } else {
-                echo "Trivy scan completed successfully with no critical vulnerabilities."
+        stage('Production: Trivy Scan') {
+            steps {
+                script {
+                    echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
+                    // Run Trivy scan and save output to a file
+                    def scanResult = sh(script: '''
+                        export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                        trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m azizballegi/tp-foyer:5.0.0 \
+                        --exit-code 1 --format html --output trivy_scan_report.html
+                    ''', returnStatus: true)
+                    
+                    // Check scan result status
+                    if (scanResult != 0) {
+                        echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
+                    } else {
+                        echo "Trivy scan completed successfully with no critical vulnerabilities."
+                    }
+                }
             }
         }
-    }
 
         stage('Production: Push Docker Image') {
             steps {
@@ -111,7 +111,7 @@ stage('Production: Trivy Scan') {
             }
         }
 
-//stage('OpenVAS Scan') {
+//stage('Operation: OpenVAS Scan') {
   //  steps {
     //    script {
       //      echo "Running OpenVAS scan..."
@@ -125,7 +125,6 @@ stage('Production: Trivy Scan') {
       //  }
   //  }
 //}
-
 
         stage('Send Email Notification') {
             steps {
@@ -154,13 +153,11 @@ stage('Production: Trivy Scan') {
             // Archive the OWASP Dependency-Check report
             archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
             
-           // Archive the Nmap scan report
-            archiveArtifacts 'nmap_scan_report.txt'
-
-// Archive the Trivy scan report
+            // Archive the Nmap scan report
+            archiveArtifacts artifacts: 'nmap_report.txt'
+            
+            // Archive the Trivy scan report
             archiveArtifacts artifacts: 'trivy_scan_report.html', allowEmptyArchive: true
-}
+        }
     }
 }
-
-
