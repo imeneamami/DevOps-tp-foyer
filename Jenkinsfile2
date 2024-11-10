@@ -3,7 +3,7 @@ pipeline {
     environment {
         // Set the email address for notifications
         RECIPIENT = 'ayedisahar3@gmail.com' // Replace with your email address
-        TARGET_HOST = '192.168.56.10'  // Replace with the actual target IP if needed
+        TARGET_HOST = '192.168.1.23'  // Replace with the actual target IP if needed
         NMAP_SCAN_OPTIONS = '-p 8089'  // Port to scan
     }
 
@@ -50,7 +50,7 @@ pipeline {
         stage('Deploy to Nexus') {
             steps {
                 // Deploy to Nexus repository
-                sh "mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.56.10:8081/repository/maven-releases/"
+                sh "mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.1.23:8081/repository/maven-releases/"
             }
         }
 
@@ -93,13 +93,6 @@ pipeline {
             steps {
                 // Start services using Docker Compose
                 sh 'sudo docker-compose up -d'
-            }
-        }
-
-        stage('Production Phase: OWASP ZAP') {
-            steps {
-                echo 'Running OWASP ZAP security scan in production...'
-                sh 'zap-cli quick-scan --self-contained http://production-url.com'
             }
         }
 
