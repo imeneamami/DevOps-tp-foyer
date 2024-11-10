@@ -94,7 +94,7 @@ pipeline {
                     
                     echo "Running SQL Injection vulnerabilities test using SQLMap..."
                     sh '''
-                        python3 /home/vagrant/DevOps-tp-foyer/sqlmap/sqlmap.py -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=5 --risk=3 --output-dir=sqlmap_output
+                        python3 sqlmap.py -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=1 --risk=1 --tamper=space2comment --output-dir=sqlmap_output
                     '''
                     echo "SQLMap scan completed. Check sqlmap_output for results."
                     
