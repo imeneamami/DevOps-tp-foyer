@@ -1,0 +1,142 @@
+pipeline {
+    agent any
+    environment {
+        // Set the email address for notifications
+        RECIPIENT = 'ayedisahar3@gmail.com' // Replace with your email address
+        TARGET_HOST = '192.168.56.10'  // Replace with the actual target IP if needed
+        NMAP_SCAN_OPTIONS = '-p 8089'  // Port to scan
+    }
+
+    stages {
+        stage('Pre-commit: Evil User Stories') {
+            steps {
+                echo 'Defining Evil User Stories to identify potential security threats...'
+                script {
+                    def evilUserStories = [
+                        "As an attacker, I want to inject SQL queries to gain unauthorized access to the database.",
+                        "As an attacker, I want to cross-site script to steal user session data.",
+                        "As an attacker, I want to exploit weak passwords to gain access to user accounts."
+                    ]
+                    for (story in evilUserStories) {
+                        echo story
+                    }
+                }
+            }
+        }
+
+        stage('Checkout Git') {
+            steps {
+                // Checkout the code from the repository
+                git credentialsId: 'cred-github', 
+                    branch: 'sahar-ayedi', // Change branch name
+                    url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
+            }
+        }
+
+        stage('Compiling') {
+            steps {
+                // Compile the project using Maven
+                sh 'mvn clean compile'
+            }
+        }
+
+        stage('SonarQube') {
+            steps {
+                // Run SonarQube analysis using Maven
+                sh 'mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=Lbm*Zgq@r73WS,.'
+            }
+        }
+
+        stage('Deploy to Nexus') {
+            steps {
+                // Deploy to Nexus repository
+                sh "mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.1.12:8081/repository/maven-releases/"
+            }
+        }
+
+        stage('OWASP Dependency-Check') {
+            steps {
+                // Run OWASP Dependency-Check during the build
+                sh 'mvn org.owasp:dependency-check-maven:check'
+            }
+        }
+
+        stage('Acceptance Phase: nmap') {
+            steps {
+                script {
+                    // Run Nmap scan targeting the containers' ports
+                    sh """
+                        nmap $NMAP_SCAN_OPTIONS $TARGET_HOST -oN nmap_scan_report.txt
+                    """
+                }
+            }
+        }
+
+        stage('Build image') {
+            steps {
+                // Build Docker image
+                sh 'sudo docker build -f Dockerfile -t sahar212/tp-foyer:1.0.0 .'
+            }
+        }
+
+        stage('Deploy image') {
+            steps {
+                // Deploy Docker image
+                sh '''
+                    sudo docker login -u sahar212 -p Lbm*Zgq@r73WS,.
+                    sudo docker push sahar212/tp-foyer:1.0.0
+                '''
+            }
+        }
+
+        stage('Docker Compose') {
+            steps {
+                // Start services using Docker Compose
+                sh 'sudo docker-compose up -d'
+            }
+        }
+
+        stage('Production Phase: OWASP ZAP') {
+            steps {
+                echo 'Running OWASP ZAP security scan in production...'
+                sh 'zap-cli quick-scan --self-contained http://production-url.com'
+            }
+        }
+
+        stage('Operation Phase: Start Grafana Monitoring') {
+            steps {
+                echo 'Starting Grafana monitoring...'
+                sh 'docker start grafana'
+            }
+        }
+
+        stage('Send Email Notification') {
+            steps {
+                script {
+                    def buildStatus = currentBuild.result ?: 'SUCCESS'
+                    def subject = "Build ${buildStatus}: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+                    def body = """
+                        The build has ${buildStatus.toLowerCase()}.
+                        
+                        You can find the OWASP Dependency-Check report in the attachments.
+                    """
+                    // Send the email
+                    emailext(
+                        to: "${RECIPIENT}",
+                        subject: subject,
+                        body: body,
+                        attachLog: true, // Attach the build log if needed
+                        attachmentsPattern: 'target/dependency-check-report.html' // Attach the report file
+                    )
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Archive artifacts including the Nmap scan report and OWASP report
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html, nmap_scan_report.txt'
+        }
+    }
+}
