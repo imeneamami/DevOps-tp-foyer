@@ -73,7 +73,7 @@ pipeline {
             }
         }
 
-        // Acceptance Stage
+          // Acceptance Stage
         stage('Acceptance: Security Scanning') {
             steps {
                 script {
@@ -83,6 +83,15 @@ pipeline {
                         nmap -sT -p 1-65535 -T4 localhost -oN nmap_report.txt
                     '''
                     echo "Nmap scan completed. Report saved to nmap_report.txt."
+
+                    // Uncomment to enable SQLMap testing
+                    /*
+                    echo "Running SQL Injection vulnerabilities test using SQLMap..."
+                    sh '''
+                        python3 /home/vagrant/DevOps-tp-foyer/sqlmap/sqlmap.py -u "http://192.168.50.2:8080/vulnerable-endpoint?id=1" --batch --level=5 --risk=3 --output-dir=sqlmap_output
+                    '''
+                    echo "SQLMap scan completed. Check sqlmap_output for results."
+                    */
                 }
             }
         }
