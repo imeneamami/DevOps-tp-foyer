@@ -40,7 +40,7 @@ pipeline {
         // Stage to clone the repository
         stage('GIT') {
             steps {
-                git branch: 'ImenAmami',
+                git branch: 'torkhaniroua',
                     url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
             }
         }
@@ -58,7 +58,7 @@ pipeline {
         // Stage for OWASP Dependency Check
         stage('Commit: OWASP SCAN') {
             steps {
-                dependencyCheck additionalArguments: '', odcInstallation: 'DP-check'
+                dependencyCheck additionalArguments: '', odcInstallation: 'DP-check',odcInstallation: 'DP-check'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
