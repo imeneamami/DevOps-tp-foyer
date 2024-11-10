@@ -3,8 +3,7 @@ pipeline {
 
     environment {
         RECIPIENT = 'fedi.ballegi20@gmail.com'
-        TARGET_HOST = '192.168.33.10'  // Replace with the actual target IP if needed
-        NMAP_SCAN_OPTIONS = '-p 8089'  // Port to scan
+        TARGET_HOST = '192.168.33.10'
     }
 
     stages {
@@ -66,10 +65,12 @@ pipeline {
         stage('Acceptance Phase: nmap') {
             steps {
                 script {
-                    // Run Nmap scan targeting the containers' ports
-                    sh """
-                        nmap $NMAP_SCAN_OPTIONS $TARGET_HOST -oN nmap_scan_report.txt
-                    """
+                   // Nmap: Test for unexpected open ports
+                    echo "Running Nmap to scan for open ports..."
+                    sh '''
+                        nmap -sT -p 1-65535 -T4 $TARGET_HOST -oN nmap_report.txt
+                    '''
+                    echo "Nmap scan completed. Report saved to nmap_report.txt."
                 }
             }
         }
@@ -109,20 +110,18 @@ pipeline {
             }
         }
 
-        stage('Deploy with Docker Compose') {
-            steps {
-                sh 'docker compose up -d'
-            }
+        stage('OpenVAS Scan') {
+    steps {
+        script {
+            echo "Running OpenVAS scan..."
+            sh '''
+                openvas-cli --target $TARGET_HOST --scan --output openvas_report.xml
+            '''
+            echo "OpenVAS scan completed. Report saved to openvas_report.xml."
         }
+    }
+}
 
-        stage('Deploy Prometheus') {
-            steps {
-                script {
-                    // Start Prometheus
-                    sh 'docker-compose up -d prometheus'
-                }
-            }
-        }
 
         stage('Send Email Notification') {
             steps {
@@ -153,6 +152,21 @@ pipeline {
             
            // Archive the Nmap scan report
             archiveArtifacts 'nmap_scan_report.txt'
+
+           // Archive the OpenVAS scan report
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'openvas_report.xml'
+
+// Archive the JaCoCo coverage report
+        archiveArtifacts allowEmptyArchive: true, artifacts: 'target/site/jacoco/index.html'
+        
+        // Publish the JaCoCo coverage report
+        jacoco(
+            changeBuildStatus: true,
+            healthy: '0', // Set a healthy threshold for coverage (e.g., 0% means any coverage is good)
+            unhealthy: '50', // Set the threshold for unhealthy (e.g., coverage below 50%)
+            thresholdMode: 'relative',
+            minimum: '0', // Minimum coverage
+            maximum: '100' // Maximum coverage
         }
     }
 }
