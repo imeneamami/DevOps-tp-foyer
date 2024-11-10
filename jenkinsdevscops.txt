@@ -5,7 +5,16 @@ pipeline {
         jdk 'JAVA_HOME'  
         maven 'M2_HOME'  
     }
-
+    stages {
+        stage('Dependency Check') {
+            steps {
+                script {
+                    dependencyCheck additionalArguments: '--scan /path/to/scan'
+                }
+            }
+        }
+        // Ajoutez d'autres étapes si nécessaire
+    }
     stages {
 
         // Pre-Commit Stage for Threat Modeling and Secure Practices
