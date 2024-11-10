@@ -75,15 +75,18 @@ pipeline {
             }
         }
 
-        // Docker Build and Push
-        stage('Production: Docker Build and Push') {
+           stage('Building Image') {
             steps {
-                script {
-                    sh 'docker build -t torkhaniroua/tp-foyer:5.0.0 .'
-                }
+                sh 'docker build -t torkhaniroua/tp-foyer:5.0.0 .'
             }
         }
-
+        
+        stage('Deploy Image') {
+            steps {
+                sh 'docker login -u torkhaniroua -p 123456789'
+                sh 'docker push torkhaniroua/tp-foyer:5.0.0'
+            }
+        }
         // Production Stage: Trivy Scan Stage
         stage('Trivy Scan') {
             steps {
