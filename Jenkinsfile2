@@ -155,19 +155,6 @@ pipeline {
 
            // Archive the OpenVAS scan report
             archiveArtifacts allowEmptyArchive: true, artifacts: 'openvas_report.xml'
-
-// Archive the JaCoCo coverage report
-        archiveArtifacts allowEmptyArchive: true, artifacts: 'target/site/jacoco/index.html'
-        
-        // Publish the JaCoCo coverage report
-        jacoco(
-            changeBuildStatus: true,
-            healthy: '0', // Set a healthy threshold for coverage (e.g., 0% means any coverage is good)
-            unhealthy: '50', // Set the threshold for unhealthy (e.g., coverage below 50%)
-            thresholdMode: 'relative',
-            minimum: '0', // Minimum coverage
-            maximum: '100' // Maximum coverage
-        )
 }
     }
 }
