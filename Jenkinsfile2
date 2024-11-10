@@ -167,7 +167,7 @@ pipeline {
             thresholdMode: 'relative',
             minimum: '0', // Minimum coverage
             maximum: '100' // Maximum coverage
-        }
+        )
     }
 }
 
