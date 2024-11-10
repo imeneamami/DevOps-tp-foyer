@@ -12,7 +12,6 @@ pipeline {
         stage('Pre-Commit: Threat Modeling and Secure Practices') {
             steps {
                 script {
-                    // Define Attacker Personas for threat modeling
                     def attackerPersonas = [
                         "Malicious insider with admin access attempting data exfiltration.",
                         "External hacker targeting user authentication mechanisms.",
@@ -23,7 +22,6 @@ pipeline {
                         echo persona
                     }
 
-                    // Evil User Stories
                     echo "\nEvil User Stories:"
                     def evilUserStories = [
                         "As an attacker, I want to inject SQL queries to gain unauthorized access to the database.",
@@ -51,9 +49,6 @@ pipeline {
             }
         }
 
-        // Commit (CI)
-
-      
         // Acceptance Stage: Security Scanning Tools
         stage('Acceptance: Security Scanning Tools') {
             steps {
@@ -75,18 +70,22 @@ pipeline {
             }
         }
 
-           stage('Building Image') {
+        // Docker Build and Push
+        stage('Building Image') {
             steps {
                 sh 'docker build -t torkhaniroua/tp-foyer:5.0.0 .'
             }
         }
-        
+
         stage('Deploy Image') {
             steps {
-                sh 'docker login -u torkhaniroua -p 123456789'
-                sh 'docker push torkhaniroua/tp-foyer:5.0.0'
+                withCredentials([usernamePassword(credentialsId: 'dockerHubCredentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh 'docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"'
+                    sh 'docker push torkhaniroua/tp-foyer:5.0.0'
+                }
             }
         }
+
         // Production Stage: Trivy Scan Stage
         stage('Trivy Scan') {
             steps {
@@ -94,7 +93,7 @@ pipeline {
                     echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
                     def scanResult = sh(script: '''
                         export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                        trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m imen1amami/tp-foyer:5.0.0 --exit-code 1
+                        trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
                     ''', returnStatus: true)
                     
                     if (scanResult != 0) {
@@ -117,32 +116,36 @@ pipeline {
                 }
             }
         }
-
-        // Notification Stage
-        stage('Send Email Notification') {
-            steps {
-                script {
-                    def buildStatus = currentBuild.result ?: 'SUCCESS'
-                    def subject = "Build ${buildStatus}: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-                    def body = """
-                        The build has ${buildStatus.toLowerCase()}.
-
-                        You can find the OWASP Dependency-Check report at: ${env.BUILD_URL}artifact/target/dependency-check-report.html
-                    """
-                    emailext(
-                        to: 'torkhan.roua@esprit.tn',
-                        subject: subject,
-                        body: body,
-                        attachLog: true,
-                        attachmentsPattern: 'target/dependency-check-report.html'
-                    )
-                }
-            }
-        }
     }
 
     post {
         always {
+            script {
+                def jobName = env.JOB_NAME
+                def buildNumber = env.BUILD_NUMBER
+                def pipelineStatus = currentBuild.result ?: 'SUCCESS'
+                def bannerColor = pipelineStatus == 'SUCCESS' ? 'green' : 'red'
+                
+                def body = """<html>
+                                <body>
+                                    <div style="border: 4px solid ${bannerColor}; padding: 10px;">
+                                        <h2>${jobName} - Build ${buildNumber}</h2>
+                                        <div style="background-color: ${bannerColor}; padding: 10px;">
+                                            <h3 style="color: white;">Pipeline Status: ${pipelineStatus}</h3>
+                                        </div>
+                                        <p>Check the <a href="${env.BUILD_URL}">Console output</a>.</p>
+                                    </div>
+                                </body>
+                            </html>"""
+                emailext (
+                    subject: "${jobName} - Build ${buildNumber} - ${pipelineStatus}",
+                    body: body,
+                    to: 'torkhani.roua@esprit.tn',
+                    from: 'jenkins@example.com',
+                    replyTo: 'jenkins@example.com',
+                    mimeType: 'text/html'
+                )
+            }
             archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
         }
     }
