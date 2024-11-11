@@ -107,16 +107,17 @@ stage('Trivy Scan') {
         script {
             echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
             
-            // Vérifie si le répertoire cache existe pour décider d'utiliser ou non --skip-db-update
+            // Essayer de vérifier si le cache existe
             def scanResult = sh(script: '''
                 export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
                 
-                if [ ! -d "$TRIVY_CACHE_DIR" ]; then
-                    # Premier scan, on ne saute pas la mise à jour de la DB
-                    trivy image --severity HIGH,CRITICAL --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
-                else
-                    # Scan suivant, on peut sauter la mise à jour de la DB
+                # Vérifie si la base de données existe pour savoir s'il s'agit du premier scan
+                if [ -d "$TRIVY_CACHE_DIR" ] && [ "$(ls -A $TRIVY_CACHE_DIR)" ]; then
+                    # Utilise --skip-db-update si le cache est disponible
                     trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
+                else
+                    # Premier scan, sans --skip-db-update
+                    trivy image --severity HIGH,CRITICAL --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
                 fi
             ''', returnStatus: true)
             
@@ -128,6 +129,7 @@ stage('Trivy Scan') {
         }
     }
 }
+
 
 
     stage('Deploy with Docker Compose') {
