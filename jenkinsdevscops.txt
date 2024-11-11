@@ -1,5 +1,8 @@
 pipeline {
     agent any
+ environment {
+        SONARQUBE_CREDENTIALS = credentials('sonarQube_credentials')
+    }
 
     tools {
         jdk 'JAVA_HOME'  // Assurez-vous que 'JAVA_HOME' est bien défini dans les outils Jenkins
@@ -57,14 +60,12 @@ pipeline {
         }
         
         
-         stage('SonarQube') {
+      
+        stage('SONARQUBE') {
             steps {
-               withSonarQubeEnv('sq1') {
-                  sh 'mvn sonar:sonar'
-               }
-           }
-         }
-
+                sh 'mvn sonar:sonar -Dsonar.login=$SONARQUBE_CREDENTIALS'
+            }
+        }
         // Acceptance Stage: Security Scanning Tools
         stage('Acceptance: Security Scanning Tools') {
             steps {
