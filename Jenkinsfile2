@@ -89,7 +89,26 @@ pipeline {
                 '''
             }
         }
-
+ stage('Production: Trivy Scan') {
+            steps {
+                script {
+                    echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
+                    // Run Trivy scan and save output to a file
+                    def scanResult = sh(script: '''
+                        export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                        trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m azizballegi/tp-foyer:5.0.0 \
+                        --exit-code 1 --format html --output trivy_scan_report.html
+                    ''', returnStatus: true)
+                    
+                    // Check scan result status
+                    if (scanResult != 0) {
+                        echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
+                    } else {
+                        echo "Trivy scan completed successfully with no critical vulnerabilities."
+                    }
+                }
+            }
+        }
        
 
         stage('Operation Phase: Start Grafana Monitoring') {
@@ -126,6 +145,9 @@ pipeline {
         always {
             // Archive artifacts including the Nmap scan report and OWASP report
             archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html, nmap_scan_report.txt'
+ 
+            // Archive the Trivy scan report
+            archiveArtifacts artifacts: 'trivy_scan_report.html', allowEmptyArchive: true
         }
     }
 }
