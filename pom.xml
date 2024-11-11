@@ -56,6 +56,12 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.jacoco</groupId>
+            <artifactId>org.jacoco.agent</artifactId>
+            <version>0.8.9</version> <!-- Use the latest version -->
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 
@@ -72,6 +78,35 @@
                         </exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+            <!-- JaCoCo Maven Plugin -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version> <!-- Use the latest version of JaCoCo -->
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal> <!-- This goal prepares the agent for coverage collection -->
+                        </goals>
+                        <phase>validate</phase> <!-- Ensure it starts at the validate phase -->
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase> <!-- Generate the report after tests -->
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/site/jacoco</outputDirectory>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>3.7.0.1746</version>
             </plugin>
         </plugins>
     </build>
