@@ -73,14 +73,14 @@ pipeline {
                     // Nmap: Test for unexpected open ports
                     echo "Running Nmap to scan for open ports..."
                     sh '''
-                        nmap -sT -p 1-65535 -T4 192.168.30.10 -oN nmap_report.txt
+                        nmap -sT -p 1-65535 -T4 192.168.33.10 -oN nmap_report.txt
                     '''
                     echo "Nmap scan completed. Report saved to nmap_report.txt."
 
                     // SQL Injection: Test for SQL injection Attacks
                     echo "Running SQL Injection vulnerabilities test using SQLMap..."
                     sh '''
-                        sqlmap -u "http://192.168.30.10/vulnerable-endpoint?id=1" --batch --level=1 --risk=1 --tamper=space2comment --output-dir=sqlmap_output
+                        sqlmap -u "http://192.168.33.10/vulnerable-endpoint?id=1" --batch --level=1 --risk=1 --tamper=space2comment --output-dir=sqlmap_output
                     '''
                     echo "SQLMap scan completed. Check sqlmap_output for results."
                 }
@@ -129,6 +129,7 @@ pipeline {
             }
         }
     }
+
 
     post {
         always {
