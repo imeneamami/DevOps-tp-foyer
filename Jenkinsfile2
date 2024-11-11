@@ -111,20 +111,12 @@ pipeline {
             }
         }
 
-//stage('Operation: OpenVAS Scan') {
-  //  steps {
-    //    script {
-      //      echo "Running OpenVAS scan..."
-        //    sh '''
-          //      # Ensure OpenVAS is started and ready
-            //    gvm-start
-              //  # Run the OpenVAS scan, replace TARGET_HOST with the target IP or domain
-              //  openvas-cli --target $TARGET_HOST --scan --output openvas_report.xml
-           // '''
-          //  echo "OpenVAS scan completed. Report saved to openvas_report.xml."
-      //  }
-  //  }
-//}
+stage('Operation Phase: Start Grafana Monitoring') {
+            steps {
+                echo 'Starting Grafana monitoring...'
+                sh 'docker start grafana'
+            }
+        }
 
         stage('Send Email Notification') {
             steps {
