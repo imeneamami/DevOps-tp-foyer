@@ -113,10 +113,12 @@ stage('Trivy Scan') {
                 
                 # Vérifie si la base de données existe pour savoir s'il s'agit du premier scan
                 if [ -d "$TRIVY_CACHE_DIR" ] && [ "$(ls -A $TRIVY_CACHE_DIR)" ]; then
-                    # Utilise --skip-db-update si le cache est disponible
+                    # Si le cache est disponible, utiliser --skip-db-update
+                    echo "Using cached Trivy DB"
                     trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
                 else
                     # Premier scan, sans --skip-db-update
+                    echo "First scan, downloading Trivy DB..."
                     trivy image --severity HIGH,CRITICAL --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
                 fi
             ''', returnStatus: true)
@@ -129,6 +131,7 @@ stage('Trivy Scan') {
         }
     }
 }
+
 
 
 
