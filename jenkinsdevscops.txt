@@ -105,33 +105,41 @@ pipeline {
 stage('Trivy Scan') {
     steps {
         script {
-            echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
-            
-            // Essayer de vérifier si le cache existe
-            def scanResult = sh(script: '''
-                export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                
-                # Vérifie si la base de données existe pour savoir s'il s'agit du premier scan
-                if [ -d "$TRIVY_CACHE_DIR" ] && [ "$(ls -A $TRIVY_CACHE_DIR)" ]; then
-                    # Si le cache est disponible, utiliser --skip-db-update
-                    echo "Using cached Trivy DB"
+            echo 'Scanning Docker image for vulnerabilities using Trivy DB...'
+
+            // Vérification si la base de données Trivy est téléchargée ou non
+            def cacheExists = sh(script: 'test -d /var/lib/jenkins/trivy_cache && ls -A /var/lib/jenkins/trivy_cache', returnStatus: true)
+
+            if (cacheExists == 0) {
+                echo 'Trivy DB already exists, running with --skip-db-update'
+                // Exécuter le scan avec la base de données Trivy existante
+                def scanResult = sh(script: '''
+                    export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
                     trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
-                else
-                    # Premier scan, sans --skip-db-update
-                    echo "First scan, downloading Trivy DB..."
-                    trivy image --severity HIGH,CRITICAL --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
-                fi
-            ''', returnStatus: true)
-            
-            if (scanResult != 0) {
-                echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
+                ''', returnStatus: true)
+                
+                if (scanResult != 0) {
+                    echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
+                } else {
+                    echo "Trivy scan completed successfully with no critical vulnerabilities."
+                }
             } else {
-                echo "Trivy scan completed successfully with no critical vulnerabilities."
+                echo 'First scan, downloading Trivy DB...'
+                // Premier scan pour télécharger la base de données Trivy
+                def scanResult = sh(script: '''
+                    export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                    trivy image --severity HIGH,CRITICAL --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
+                ''', returnStatus: true)
+                
+                if (scanResult != 0) {
+                    echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
+                } else {
+                    echo "Trivy scan completed successfully with no critical vulnerabilities."
+                }
             }
         }
     }
 }
-
 
 
 
