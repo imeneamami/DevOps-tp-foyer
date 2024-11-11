@@ -107,12 +107,12 @@ stage('Trivy Scan') {
         script {
             echo 'Scanning Docker image for vulnerabilities using Trivy DB...'
 
-            // Vérification si la base de données Trivy est téléchargée ou non
+            // Vérifier si le cache existe
             def cacheExists = sh(script: 'test -d /var/lib/jenkins/trivy_cache && ls -A /var/lib/jenkins/trivy_cache', returnStatus: true)
 
             if (cacheExists == 0) {
                 echo 'Trivy DB already exists, running with --skip-db-update'
-                // Exécuter le scan avec la base de données Trivy existante
+                // Si la base de données existe déjà, on fait un scan sans la mettre à jour
                 def scanResult = sh(script: '''
                     export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
                     trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
@@ -125,7 +125,7 @@ stage('Trivy Scan') {
                 }
             } else {
                 echo 'First scan, downloading Trivy DB...'
-                // Premier scan pour télécharger la base de données Trivy
+                // Premier scan, télécharger la base de données
                 def scanResult = sh(script: '''
                     export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
                     trivy image --severity HIGH,CRITICAL --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
