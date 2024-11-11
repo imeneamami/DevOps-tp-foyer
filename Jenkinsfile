@@ -32,7 +32,7 @@ pipeline {
         stage('Deploy to Nexus') {
             steps {
                 // Deploy to Nexus repository
-                sh "mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.1.23:8081/repository/maven-releases/"
+                sh "mvn deploy -DskipTests -DaltDeploymentRepository=deploymentRepo::default::http://192.168.1.57:8081/repository/maven-releases/"
             }
         }
       stage('OWASP Dependency-Check') {
@@ -64,6 +64,13 @@ pipeline {
             steps {
                 // Start services using Docker Compose
                 sh 'sudo docker compose up -d'
+            }
+        }
+
+        stage('Operation Phase: Start Grafana Monitoring') {
+            steps {
+                echo 'Starting Grafana monitoring...'
+                sh 'docker start grafana'
             }
         }
          stage('Send Email Notification') {
