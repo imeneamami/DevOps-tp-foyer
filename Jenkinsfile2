@@ -90,12 +90,7 @@ pipeline {
             }
         }
 
-        stage('Docker Compose') {
-            steps {
-                // Start services using Docker Compose
-                sh 'sudo docker-compose up -d'
-            }
-        }
+       
 
         stage('Operation Phase: Start Grafana Monitoring') {
             steps {
