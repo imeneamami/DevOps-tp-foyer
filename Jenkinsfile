@@ -20,20 +20,20 @@ pipeline {
             }
         }
 
-        // Uncomment these stages if you need them
-        // stage('Scan') {
-        //     steps {
-        //         withSonarQubeEnv('sq1') {
-        //             sh 'mvn sonar:sonar'
-        //         }
-        //     }
-        // }
+        
+         stage('Scan') {
+            steps {
+               withSonarQubeEnv('sq1') {
+                   sh 'mvn sonar:sonar'
+               }
+            }
+        }
 
-        // stage('Deploy to Nexus') {
-        //     steps {
-        //         sh 'mvn deploy'
-        //     }
-        // }
+         stage('Deploy to Nexus') {
+            steps {
+                sh 'mvn deploy'
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -43,13 +43,7 @@ pipeline {
             }
         }
 
-        stage('Check Permissions') {
-            steps {
-                script {
-                    sh 'ls -l push_docker_image.sh'
-                }
-            }
-        }
+        
 
         stage('Push Docker Image to Docker Hub') {
             steps {
