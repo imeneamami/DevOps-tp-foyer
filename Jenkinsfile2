@@ -61,13 +61,24 @@ pipeline {
             }
         }
 
-        stage('Acceptance Phase: nmap') {
+       stage('Acceptance: Security Scanning Tools') {
             steps {
                 script {
-                    // Run Nmap scan targeting the containers' ports
-                    sh """
-                        nmap $NMAP_SCAN_OPTIONS $TARGET_HOST -oN nmap_scan_report.txt
-                    """
+                    // Nmap: Test for unexpected open ports
+                    echo "Running Nmap to scan for open ports..."
+                    sh '''
+                        nmap -sT -p 1-65535 -T4 192.168.1.23 -oN nmap_report.txt
+                    '''
+                    echo "Nmap scan completed. Report saved to nmap_report.txt."
+
+                    // SQL Injection: Test for SQL injection Attacks
+                    
+                    echo "Running SQL Injection vulnerabilities test using SQLMap..."
+                    sh '''
+                        python3  /home/vagrant/DevOps-tp-foyer/sqlmap/sqlmap.py -u "http://192.168.1.23:8080/vulnerable-endpoint?id=1" --batch --level=1 --risk=1 --tamper=space2comment --output-dir=sqlmap_output
+                    '''
+                    echo "SQLMap scan completed. Check sqlmap_output for results."
+                    
                 }
             }
         }
