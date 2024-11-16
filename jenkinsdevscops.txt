@@ -1,16 +1,15 @@
 pipeline {
     agent any
- environment {
+    environment {
         SONARQUBE_CREDENTIALS = credentials('sonarQube_credentials')
     }
 
     tools {
-        jdk 'JAVA_HOME'  // Assurez-vous que 'JAVA_HOME' est bien défini dans les outils Jenkins
-        maven 'M2_HOME'  // Assurez-vous que 'M2_HOME' est bien défini dans les outils Jenkins
+        jdk 'JAVA_HOME'  // Assurez-vous que 'JAVA_HOME' est bien configuré dans Jenkins
+        maven 'M2_HOME'  // Assurez-vous que 'M2_HOME' est bien configuré dans Jenkins
     }
 
     stages {
-
         // Pre-Commit Stage for Threat Modeling and Secure Practices
         stage('Pre-Commit: Threat Modeling and Secure Practices') {
             steps {
@@ -21,18 +20,14 @@ pipeline {
                         "Script kiddie trying to exploit known vulnerabilities in the system."
                     ]
                     echo "Attacker Personas:"
-                    for (persona in attackerPersonas) {
-                        echo persona
-                    }
+                    attackerPersonas.each { persona -> echo persona }
 
                     echo "\nEvil User Stories:"
                     def evilUserStories = [
                         "As an attacker, I want to inject SQL queries to gain unauthorized access to the database.",
                         "As an attacker, I want to exploit weak passwords to access user accounts."
                     ]
-                    for (story in evilUserStories) {
-                        echo story
-                    }
+                    evilUserStories.each { story -> echo story }
                 }
             }
         }
@@ -51,21 +46,22 @@ pipeline {
                 sh 'mvn clean compile'
             }
         }
-  // Stage for OWASP Dependency Check
+
+        // Stage for OWASP Dependency Check
         stage('Commit: OWASP SCAN') {
             steps {
                 dependencyCheck additionalArguments: '', odcInstallation: 'DP-check'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
-        
-        
-      
+
+        // Stage for SonarQube analysis
         stage('SONARQUBE') {
             steps {
                 sh 'mvn sonar:sonar -Dsonar.login=$SONARQUBE_CREDENTIALS'
             }
         }
+
         // Acceptance Stage: Security Scanning Tools
         stage('Acceptance: Security Scanning Tools') {
             steps {
@@ -94,65 +90,59 @@ pipeline {
             }
         }
 
-      
+        // Stage for Docker push
         stage('Deploy Image') {
             steps {
                 sh 'docker login -u torkhaniroua -p 123456789'
                 sh 'docker push torkhaniroua/tp-foyer:5.0.0'
             }
         }
-// Production Stage: Trivy Scan Stage
-stage('Trivy Scan') {
-    steps {
-        script {
-            echo 'Scanning Docker image for vulnerabilities using Trivy DB...'
 
-            // Vérifier si le cache existe
-            def cacheExists = sh(script: 'test -d /var/lib/jenkins/trivy_cache && ls -A /var/lib/jenkins/trivy_cache', returnStatus: true)
-
-            if (cacheExists == 0) {
-                echo 'Trivy DB already exists, running with --skip-db-update'
-                // Si la base de données existe déjà, on fait un scan sans la mettre à jour
-                def scanResult = sh(script: '''
-                    export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                    trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
-                ''', returnStatus: true)
-                
-                if (scanResult != 0) {
-                    echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
-                } else {
-                    echo "Trivy scan completed successfully with no critical vulnerabilities."
-                }
-            } else {
-                echo 'First scan, downloading Trivy DB...'
-                // Premier scan, télécharger la base de données
-                def scanResult = sh(script: '''
-                    export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                    trivy image --severity HIGH,CRITICAL --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
-                ''', returnStatus: true)
-                
-                if (scanResult != 0) {
-                    echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
-                } else {
-                    echo "Trivy scan completed successfully with no critical vulnerabilities."
-                }
-            }
-        }
-    }
-}
-
-
-
-    stage('Deploy with Docker Compose') {
+        // Production Stage: Trivy Scan Stage
+        stage('Trivy Scan') {
             steps {
                 script {
-                    sh 'docker-compose up -d'
+                    echo 'Scanning Docker image for vulnerabilities using Trivy DB...'
+
+                    def cacheExists = sh(script: 'test -d /var/lib/jenkins/trivy_cache && ls -A /var/lib/jenkins/trivy_cache', returnStatus: true)
+
+                    if (cacheExists == 0) {
+                        echo 'Trivy DB already exists, running with --skip-db-update'
+                        def scanResult = sh(script: '''
+                            export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                            trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
+                        ''', returnStatus: true)
+                        
+                        if (scanResult != 0) {
+                            echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
+                        } else {
+                            echo "Trivy scan completed successfully with no critical vulnerabilities."
+                        }
+                    } else {
+                        echo 'First scan, downloading Trivy DB...'
+                        def scanResult = sh(script: '''
+                            export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                            trivy image --severity HIGH,CRITICAL --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
+                        ''', returnStatus: true)
+                        
+                        if (scanResult != 0) {
+                            echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
+                        } else {
+                            echo "Trivy scan completed successfully with no critical vulnerabilities."
+                        }
+                    }
                 }
             }
         }
+
+        // Stage to deploy with Docker Compose
+        stage('Deploy with Docker Compose') {
+            steps {
+                sh 'docker-compose up -d'
+            }
+        }
     }
-}
-   
+
     post {
         always {
             script {
