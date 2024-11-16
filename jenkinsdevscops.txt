@@ -151,6 +151,16 @@ stage('Trivy Scan') {
             }
         }
     }
+ stage('Run prometheus') {
+            steps {
+                sh 'docker restart prometheus'
+            }
+        }
+        stage('Run Grafana') {
+            steps {
+                sh 'docker restart grafana'
+            }
+        }
    
     post {
         always {
