@@ -9,25 +9,21 @@ pipeline {
         maven 'M2_HOME'  // Assurez-vous que 'M2_HOME' est bien configuré dans Jenkins
     }
 
-    stages {
-        // Pre-Commit Stage for Threat Modeling and Secure Practices
-        stage('Pre-Commit: Threat Modeling and Secure Practices') {
+   
+      stages {
+        stage('Pre-commit: Evil User Stories') {
             steps {
+                echo 'Defining Evil User Stories to identify potential security threats...'
                 script {
-                    def attackerPersonas = [
-                        "Malicious insider with admin access attempting data exfiltration.",
-                        "External hacker targeting user authentication mechanisms.",
-                        "Script kiddie trying to exploit known vulnerabilities in the system."
-                    ]
-                    echo "Attacker Personas:"
-                    attackerPersonas.each { persona -> echo persona }
-
-                    echo "\nEvil User Stories:"
                     def evilUserStories = [
                         "As an attacker, I want to inject SQL queries to gain unauthorized access to the database.",
-                        "As an attacker, I want to exploit weak passwords to access user accounts."
+                        "As an attacker, I want to cross-site script to steal user session data.",
+                        "As an attacker, I want to exploit weak passwords to gain access to user accounts."
                     ]
-                    evilUserStories.each { story -> echo story }
+
+                    for (story in evilUserStories) {
+                        echo story
+                    }
                 }
             }
         }
