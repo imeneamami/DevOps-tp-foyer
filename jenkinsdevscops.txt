@@ -2,36 +2,32 @@ pipeline {
     agent any
     environment {
         SONARQUBE_CREDENTIALS = credentials('sonarQube_credentials')
-        TRIVY_CACHE_DIR = '/var/lib/jenkins/trivy_cache'
     }
 
     tools {
-        jdk 'JAVA_HOME'
-        maven 'M2_HOME'
+        jdk 'JAVA_HOME'  // Assurez-vous que 'JAVA_HOME' est bien configuré dans Jenkins
+        maven 'M2_HOME'  // Assurez-vous que 'M2_HOME' est bien configuré dans Jenkins
     }
 
     stages {
-        stage('Pre-Commit: Threat Modeling and Secure Practices') {
+        stage('Pre-commit: Evil User Stories') {
             steps {
+                echo 'Defining Evil User Stories to identify potential security threats...'
                 script {
-                    def attackerPersonas = [
-                        "Malicious insider with admin access attempting data exfiltration.",
-                        "External hacker targeting user authentication mechanisms.",
-                        "Script kiddie trying to exploit known vulnerabilities in the system."
-                    ]
-                    echo "Attacker Personas:"
-                    attackerPersonas.each { persona -> echo persona }
-
-                    echo "\nEvil User Stories:"
                     def evilUserStories = [
                         "As an attacker, I want to inject SQL queries to gain unauthorized access to the database.",
-                        "As an attacker, I want to exploit weak passwords to access user accounts."
+                        "As an attacker, I want to cross-site script to steal user session data.",
+                        "As an attacker, I want to exploit weak passwords to gain access to user accounts."
                     ]
-                    evilUserStories.each { story -> echo story }
+
+                    for (story in evilUserStories) {
+                        echo story
+                    }
                 }
             }
         }
 
+        // Stage to clone the repository
         stage('GIT') {
             steps {
                 git branch: 'torkhaniroua',
@@ -39,12 +35,14 @@ pipeline {
             }
         }
 
+        // Stage to compile Maven project
         stage('Maven Compile') {
             steps {
                 sh 'mvn clean compile'
             }
         }
 
+        // Stage for OWASP Dependency Check
         stage('Commit: OWASP SCAN') {
             steps {
                 dependencyCheck additionalArguments: '', odcInstallation: 'DP-check'
@@ -52,21 +50,25 @@ pipeline {
             }
         }
 
+        // Stage for SonarQube analysis
         stage('SONARQUBE') {
             steps {
-                sh "mvn sonar:sonar -Dsonar.login=${SONARQUBE_CREDENTIALS}"
+                sh 'mvn sonar:sonar -Dsonar.login=$SONARQUBE_CREDENTIALS'
             }
         }
 
+        // Acceptance Stage: Security Scanning Tools
         stage('Acceptance: Security Scanning Tools') {
             steps {
                 script {
+                    // Nmap: Test for unexpected open ports
                     echo "Running Nmap to scan for open ports..."
                     sh '''
                         nmap -sT -p 1-65535 -T4 192.168.33.10 -oN nmap_report.txt
                     '''
                     echo "Nmap scan completed. Report saved to nmap_report.txt."
 
+                    // SQL Injection: Test for SQL injection Attacks
                     echo "Running SQL Injection vulnerabilities test using SQLMap..."
                     sh '''
                         sqlmap -u "http://192.168.33.10/vulnerable-endpoint?id=1" --batch --level=1 --risk=1 --tamper=space2comment --output-dir=sqlmap_output
@@ -76,34 +78,14 @@ pipeline {
             }
         }
 
+        // Docker Build and Push
         stage('Building Image') {
             steps {
                 sh 'docker build -t torkhaniroua/tp-foyer:5.0.0 .'
             }
         }
 
-        stage('Trivy Scan') {
-            steps {
-                script {
-                    if (fileExists("${TRIVY_CACHE_DIR}")) {
-                        echo "Trivy DB already exists, running with --skip-db-update"
-                        sh '''
-                            export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                            trivy image --severity HIGH,CRITICAL --skip-db-update \
-                            --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1 || echo "Vulnerabilities found but continuing..."
-                        '''
-                    } else {
-                        echo "First scan, downloading Trivy DB..."
-                        sh '''
-                            export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
-                            trivy image --severity HIGH,CRITICAL --scanners vuln --timeout 10m \
-                            torkhaniroua/tp-foyer:5.0.0 --exit-code 1 || echo "Vulnerabilities found but continuing..."
-                        '''
-                    }
-                }
-            }
-        }
-
+        // Stage for Docker push
         stage('Deploy Image') {
             steps {
                 sh 'docker login -u torkhaniroua -p 123456789'
@@ -111,21 +93,47 @@ pipeline {
             }
         }
 
+        // Production Stage: Trivy Scan Stage
+        stage('Trivy Scan') {
+            steps {
+                script {
+                    echo 'Scanning Docker image for vulnerabilities using Trivy DB...'
+
+                    def cacheExists = sh(script: 'test -d /var/lib/jenkins/trivy_cache && ls -A /var/lib/jenkins/trivy_cache', returnStatus: true)
+
+                    if (cacheExists == 0) {
+                        echo 'Trivy DB already exists, running with --skip-db-update'
+                        def scanResult = sh(script: '''
+                            export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                            trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
+                        ''', returnStatus: true)
+                        
+                        if (scanResult != 0) {
+                            echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
+                        } else {
+                            echo "Trivy scan completed successfully with no critical vulnerabilities."
+                        }
+                    } else {
+                        echo 'First scan, downloading Trivy DB...'
+                        def scanResult = sh(script: '''
+                            export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                            trivy image --severity HIGH,CRITICAL --scanners vuln --timeout 10m torkhaniroua/tp-foyer:5.0.0 --exit-code 1
+                        ''', returnStatus: true)
+                        
+                        if (scanResult != 0) {
+                            echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
+                        } else {
+                            echo "Trivy scan completed successfully with no critical vulnerabilities."
+                        }
+                    }
+                }
+            }
+        }
+
+        // Stage to deploy with Docker Compose
         stage('Deploy with Docker Compose') {
             steps {
                 sh 'docker-compose up -d'
-            }
-        }
-
-        stage('Run Prometheus') {
-            steps {
-                sh 'docker restart prometheus'
-            }
-        }
-
-        stage('Run Grafana') {
-            steps {
-                sh 'docker restart grafana'
             }
         }
     }
@@ -137,28 +145,28 @@ pipeline {
                 def buildNumber = env.BUILD_NUMBER
                 def pipelineStatus = currentBuild.result ?: 'SUCCESS'
                 def bannerColor = pipelineStatus == 'SUCCESS' ? 'green' : 'red'
-
-                def body = """
-                <html>
-                    <body>
-                        <div style="border: 4px solid ${bannerColor}; padding: 10px;">
-                            <h2>${jobName} - Build ${buildNumber}</h2>
-                            <div style="background-color: ${bannerColor}; padding: 10px;">
-                                <h3 style="color: white;">Pipeline Status: ${pipelineStatus}</h3>
-                            </div>
-                            <p>Check the <a href="${env.BUILD_URL}">Console output</a>.</p>
-                        </div>
-                    </body>
-                </html>
-                """
-                emailext(
+                
+                def body = """<html>
+                                <body>
+                                    <div style="border: 4px solid ${bannerColor}; padding: 10px;">
+                                        <h2>${jobName} - Build ${buildNumber}</h2>
+                                        <div style="background-color: ${bannerColor}; padding: 10px;">
+                                            <h3 style="color: white;">Pipeline Status: ${pipelineStatus}</h3>
+                                        </div>
+                                        <p>Check the <a href="${env.BUILD_URL}">Console output</a>.</p>
+                                    </div>
+                                </body>
+                            </html>"""
+                emailext (
                     subject: "${jobName} - Build ${buildNumber} - ${pipelineStatus}",
                     body: body,
                     to: 'torkhani.roua@esprit.tn',
                     from: 'jenkins@example.com',
+                    replyTo: 'jenkins@example.com',
                     mimeType: 'text/html'
                 )
             }
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
         }
     }
 }
