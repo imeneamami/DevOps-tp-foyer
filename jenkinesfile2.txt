@@ -46,9 +46,9 @@ pipeline {
             }
         }
 
-        stage('SonarQube') {
+       stage('SONARQUBE') {
             steps {
-                sh 'mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=Azizballegi@1234 -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
+                sh 'mvn sonar:sonar -Dsonar.login=$SONARQUBE_CREDENTIALS'
             }
         }
 
@@ -79,7 +79,7 @@ pipeline {
         // Production Stage: Docker Build and Push
         stage('Production: Build Docker Image') {
             steps {
-                sh 'docker build -f Dockerfile -t azizballegi/tp-foyer:1.0.0 .'
+                sh 'docker build -f Dockerfile -t torkhaniroua/tp-foyer:1.0.0 .'
             }
         }
 
