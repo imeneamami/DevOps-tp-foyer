@@ -103,15 +103,16 @@ pipeline {
                 }
             }
         }
-
-        stage('Production: Push Docker Image') {
+      
+        stage('Deploy Image') {
             steps {
-                sh '''
-                    docker login -u azizballegi -p Aziz@1234
-                    docker push azizballegi/tp-foyer:1.0.0
-                '''
+                sh 'docker login -u torkhaniroua -p 123456789'
+                sh 'docker push torkhaniroua/tp-foyer:5.0.0'
             }
         }
+
+
+      
 
 stage('Operation Phase: Start Grafana Monitoring') {
             steps {
