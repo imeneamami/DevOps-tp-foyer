@@ -1,0 +1,155 @@
+pipeline {
+    agent any
+
+    environment {
+        RECIPIENT = 'fedi.ballegi20@gmail.com'
+        TARGET_HOST = '192.168.33.10'
+    }
+
+    stages {
+        stage('Pre-commit: Evil User Stories') {
+            steps {
+                echo 'Defining Evil User Stories to identify potential security threats...'
+                script {
+                    def evilUserStories = [
+                        "As an attacker, I want to inject SQL queries to gain unauthorized access to the database.",
+                        "As an attacker, I want to cross-site script to steal user session data.",
+                        "As an attacker, I want to exploit weak passwords to gain access to user accounts."
+                    ]
+
+                    for (story in evilUserStories) {
+                        echo story
+                    }
+                }
+            }
+        }
+
+        stage('Checkout Git') {
+            steps {
+                git credentialsId: 'cred-github', 
+                    branch: 'torkhaniroua',
+                    url: 'https://github.com/imeneamami/DevOps-tp-foyer.git'
+            }
+        }
+
+        stage('Compiling') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Run Unit Tests and JaCoCo') {
+            steps {
+                sh 'mvn test jacoco:report'
+            }
+        }
+
+        stage('SonarQube') {
+            steps {
+                sh 'mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=Azizballegi@1234 -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
+            }
+        }
+
+        stage('Nexus Deploy') {
+            steps {
+                sh 'mvn deploy -DskipTests'
+            }
+        }
+
+        stage('Commit: OWASP Dependency-Check') {
+            steps {
+                sh 'mvn org.owasp:dependency-check-maven:check'
+            }
+        }
+
+        stage('Acceptance Phase: nmap') {
+            steps {
+                script {
+                    echo "Running Nmap to scan for open ports..."
+                    sh '''
+                        nmap -sT -p 1-65535 -T4 $TARGET_HOST -oN nmap_report.txt
+                    '''
+                    echo "Nmap scan completed. Report saved to nmap_report.txt."
+                }
+            }
+        }
+
+        // Production Stage: Docker Build and Push
+        stage('Production: Build Docker Image') {
+            steps {
+                sh 'docker build -f Dockerfile -t azizballegi/tp-foyer:1.0.0 .'
+            }
+        }
+
+        stage('Production: Trivy Scan') {
+            steps {
+                script {
+                    echo 'Scanning Docker image for vulnerabilities using cached Trivy DB...'
+                    // Run Trivy scan and save output to a file
+                    def scanResult = sh(script: '''
+                        export TRIVY_CACHE_DIR="/var/lib/jenkins/trivy_cache"
+                        trivy image --severity HIGH,CRITICAL --skip-db-update --scanners vuln --timeout 10m azizballegi/tp-foyer:5.0.0 \
+                        --exit-code 1 --format html --output trivy_scan_report.html
+                    ''', returnStatus: true)
+                    
+                    // Check scan result status
+                    if (scanResult != 0) {
+                        echo "Trivy scan found vulnerabilities in the Docker image, but continuing the build."
+                    } else {
+                        echo "Trivy scan completed successfully with no critical vulnerabilities."
+                    }
+                }
+            }
+        }
+
+        stage('Production: Push Docker Image') {
+            steps {
+                sh '''
+                    docker login -u azizballegi -p Aziz@1234
+                    docker push azizballegi/tp-foyer:1.0.0
+                '''
+            }
+        }
+
+stage('Operation Phase: Start Grafana Monitoring') {
+            steps {
+                echo 'Starting Grafana monitoring...'
+                sh 'docker start grafana'
+            }
+        }
+
+        stage('Send Email Notification') {
+            steps {
+                script {
+                    def buildStatus = currentBuild.result ?: 'SUCCESS'
+                    def subject = "Build ${buildStatus}: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+                    def body = """
+                        The build has ${buildStatus.toLowerCase()}.
+                        
+                        You can find the OWASP Dependency-Check report attached.
+                    """
+                    emailext(
+                        to: "${RECIPIENT}",
+                        subject: subject,
+                        body: body,
+                        attachLog: true,
+                        attachmentsPattern: 'target/dependency-check-report.html'
+                    )
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Archive the OWASP Dependency-Check report
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html'
+            
+            // Archive the Nmap scan report
+            archiveArtifacts artifacts: 'nmap_report.txt'
+            
+            // Archive the Trivy scan report
+            archiveArtifacts artifacts: 'trivy_scan_report.html', allowEmptyArchive: true
+        }
+    }
+}
